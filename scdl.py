@@ -4,7 +4,11 @@ import requests
 import urllib
 import json
 import re
-
+import os
+import mutagen
+from mutagen.easyid3 import EasyID3
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3, APIC
 
 soundcloud_url = raw_input("Please enter a URL: ")
 
@@ -78,6 +82,47 @@ def download_track(trackid, song_url, track_title):
 	#Download the track
 	urllib.urlretrieve(file_mp3_url, track_title + ".mp3")
 
+def get_tags(soundcloud_url):
+	client_id = "fDoItMDbsbZz8dY16ZzARCZmzgHBPotA"
+	resolve_url = "https://api.soundcloud.com/resolve.json?url="
+	a = requests.get(resolve_url + soundcloud_url + "&client_id=" + client_id)
+	a = a.content
+	tags = json.loads(a)
+	track_name = tags["title"]
+	
+	artist = str(tags["user"]["username"])
+	print artist
+	cover = tags["artwork_url"]
+	cover = cover.replace("large", "t500x500")
+	cover_download = requests.get(cover)
+	open('cover.jpg', 'w').write(cover_download.content)
+
+	return track_name, artist
+
+
+def add_tags(title, artist):
+	try:
+		audio = EasyID3("%s" % title + ".mp3")
+	except mutagen.id3._util.ID3NoHeaderError:
+		audio = mutagen.File("%s" % title + ".mp3", easy=True)
+		audio.add_tags()
+	audio['title'] = u"%s" % title
+	audio['artist'] = u"%s" % artist
+	audio.save()
+	audio = MP3("%s" % title + ".mp3", ID3=ID3)
+	audio.tags.add(
+		APIC(
+			encoding=3,
+			mime='image/jpeg',
+			type=3,
+			desc=u'Cover',
+			data=open('cover.jpg').read()
+			)
+		)
+	audio.save()
+
+def delete_albumart():
+	os.remove("cover.jpg")
 
 # Checks, whether the URL is a playlist or not
 if '/sets' in soundcloud_url:
@@ -86,6 +131,9 @@ if '/sets' in soundcloud_url:
 	for index in range(len(trackid)):
 		print track_title[index]
 		download_track(trackid[index], permalink_url[index], track_title[index])
+		track_name, artist = get_tags(permalink_url[index])
+		add_tags(track_name, artist)
+		delete_albumart()
 
 	print "Done!"
 
@@ -93,4 +141,7 @@ if '/sets' in soundcloud_url:
 else:	
 	track_name, trackid = get_trackid_single_song(soundcloud_url)
 	download_track(trackid, soundcloud_url, track_name);
+	track_name, artist = get_tags(soundcloud_url)
+	add_tags(track_name, artist)
+	delete_albumart()
 	print "Done!"
