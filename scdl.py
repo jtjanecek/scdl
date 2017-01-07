@@ -74,7 +74,6 @@ def download_track(trackid, song_url, track_title):
 	x = '"'
 	url_split = file_mp3_url.split(x)
 	file_mp3_url = url_split[0]
-	#print mp3_url
 
 	#Step 3: Replace the \u0026 with &
 	file_mp3_url = file_mp3_url.replace("\u0026", "&")
@@ -91,13 +90,21 @@ def get_tags(soundcloud_url):
 	track_name = tags["title"]
 	
 	artist = str(tags["user"]["username"])
-	print artist
 	cover = tags["artwork_url"]
 	cover = cover.replace("large", "t500x500")
 	cover_download = requests.get(cover)
 	open('cover.jpg', 'w').write(cover_download.content)
 
 	return track_name, artist
+
+def get_album_name(soundcloud_url):
+	client_id = "fDoItMDbsbZz8dY16ZzARCZmzgHBPotA"
+	resolve_url = "https://api.soundcloud.com/resolve.json?url="
+	a = requests.get(resolve_url + soundcloud_url + "&client_id=" + client_id)
+	a = a.content
+	tags = json.loads(a)
+	album = tags["title"]
+	return album
 
 
 def add_tags(title, artist):
@@ -108,6 +115,9 @@ def add_tags(title, artist):
 		audio.add_tags()
 	audio['title'] = u"%s" % title
 	audio['artist'] = u"%s" % artist
+	if '/sets/' in soundcloud_url:
+		audio['album'] = u"%s" % album
+
 	audio.save()
 	audio = MP3("%s" % title + ".mp3", ID3=ID3)
 	audio.tags.add(
@@ -132,6 +142,7 @@ if '/sets' in soundcloud_url:
 		print track_title[index]
 		download_track(trackid[index], permalink_url[index], track_title[index])
 		track_name, artist = get_tags(permalink_url[index])
+		album = get_album_name(soundcloud_url)
 		add_tags(track_name, artist)
 		delete_albumart()
 
