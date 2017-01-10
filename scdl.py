@@ -117,6 +117,8 @@ def add_tags(title, artist):
 	audio['artist'] = u"%s" % artist
 	if '/sets/' in soundcloud_url:
 		audio['album'] = u"%s" % album
+	else:
+		audio['album'] = u"SoundCloud"
 
 	audio.save()
 	audio = MP3("%s" % title + ".mp3", ID3=ID3)
