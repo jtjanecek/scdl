@@ -142,8 +142,12 @@ if '/sets' in soundcloud_url:
 
 	for index in range(len(trackid)):
 		print track_title[index]
+		if "/" in track_title[index]:
+			track_title[index] = track_title[index].replace("/", "-")
 		download_track(trackid[index], permalink_url[index], track_title[index])
 		track_name, artist = get_tags(permalink_url[index])
+		if "/" in track_name:
+			track_name = track_name.replace("/", "-")
 		album = get_album_name(soundcloud_url)
 		add_tags(track_name, artist)
 		delete_albumart()
@@ -153,8 +157,12 @@ if '/sets' in soundcloud_url:
 
 else:	
 	track_name, trackid = get_trackid_single_song(soundcloud_url)
+	if "/" in track_name:
+			track_name = track_name.replace("/", "-")
 	download_track(trackid, soundcloud_url, track_name);
 	track_name, artist = get_tags(soundcloud_url)
+	if "/" in track_name:
+			track_name = track_name.replace("/", "-")
 	add_tags(track_name, artist)
 	delete_albumart()
 	print "Done!"
