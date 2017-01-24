@@ -5,6 +5,7 @@ import urllib
 import json
 import re
 import os
+import os.path
 import mutagen
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
@@ -79,7 +80,8 @@ def download_track(trackid, song_url, track_title):
 	file_mp3_url = file_mp3_url.replace("\u0026", "&")
 
 	#Download the track
-	urllib.urlretrieve(file_mp3_url, track_title + ".mp3")
+	if not os.path.exists(str(track_title) + ".mp3"):
+		urllib.urlretrieve(file_mp3_url, track_title + ".mp3")
 
 def get_tags(soundcloud_url):
 	client_id = "fDoItMDbsbZz8dY16ZzARCZmzgHBPotA"
@@ -91,11 +93,15 @@ def get_tags(soundcloud_url):
 	
 	artist = str(tags["user"]["username"])
 	cover = tags["artwork_url"]
-	cover = cover.replace("large", "t500x500")
-	cover_download = requests.get(cover)
-	open('cover.jpg', 'w').write(cover_download.content)
+	if cover:
+		coverflag = 1
+		cover = cover.replace("large", "t500x500")
+		cover_download = requests.get(cover)
+		open('cover.jpg', 'w').write(cover_download.content)
+	else:
+		coverflag = 0
 
-	return track_name, artist
+	return track_name, artist, coverflag
 
 def get_album_name(soundcloud_url):
 	client_id = "fDoItMDbsbZz8dY16ZzARCZmzgHBPotA"
@@ -107,7 +113,7 @@ def get_album_name(soundcloud_url):
 	return album
 
 
-def add_tags(title, artist):
+def add_tags(title, artist, coverflag):
 	try:
 		audio = EasyID3("%s" % title + ".mp3")
 	except mutagen.id3._util.ID3NoHeaderError:
@@ -122,15 +128,16 @@ def add_tags(title, artist):
 
 	audio.save()
 	audio = MP3("%s" % title + ".mp3", ID3=ID3)
-	audio.tags.add(
-		APIC(
-			encoding=3,
-			mime='image/jpeg',
-			type=3,
-			desc=u'Cover',
-			data=open('cover.jpg').read()
+	if coverflag == 1:
+		audio.tags.add(
+			APIC(
+				encoding=3,
+				mime='image/jpeg',
+				type=3,
+				desc=u'Cover',
+				data=open('cover.jpg').read()
+				)
 			)
-		)
 	audio.save()
 
 def delete_albumart():
@@ -145,12 +152,13 @@ if '/sets' in soundcloud_url:
 		if "/" in track_title[index]:
 			track_title[index] = track_title[index].replace("/", "-")
 		download_track(trackid[index], permalink_url[index], track_title[index])
-		track_name, artist = get_tags(permalink_url[index])
+		track_name, artist, coverflag = get_tags(permalink_url[index])
 		if "/" in track_name:
 			track_name = track_name.replace("/", "-")
 		album = get_album_name(soundcloud_url)
-		add_tags(track_name, artist)
-		delete_albumart()
+		add_tags(track_name, artist, coverflag)
+		if coverflag == 1:
+			delete_albumart()
 
 	print "Done!"
 
@@ -160,9 +168,10 @@ else:
 	if "/" in track_name:
 			track_name = track_name.replace("/", "-")
 	download_track(trackid, soundcloud_url, track_name);
-	track_name, artist = get_tags(soundcloud_url)
+	track_name, artist, coverflag = get_tags(soundcloud_url)
 	if "/" in track_name:
 			track_name = track_name.replace("/", "-")
-	add_tags(track_name, artist)
-	delete_albumart()
+	add_tags(track_name, artist, coverflag)
+	if coverflag == 1:
+		delete_albumart()
 	print "Done!"
