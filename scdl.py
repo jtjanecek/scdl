@@ -80,8 +80,8 @@ def download_track(trackid, song_url, track_title):
 	file_mp3_url = file_mp3_url.replace("\u0026", "&")
 
 	#Download the track
-	if not os.path.exists(str(track_title) + ".mp3"):
-		urllib.urlretrieve(file_mp3_url, track_title + ".mp3")
+	if not os.path.exists((track_title) + ".mp3"):
+		urllib.urlretrieve(file_mp3_url, u"%s" % track_title + ".mp3")
 
 def get_tags(soundcloud_url):
 	client_id = "fDoItMDbsbZz8dY16ZzARCZmzgHBPotA"
