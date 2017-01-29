@@ -143,6 +143,11 @@ def add_tags(title, artist, coverflag):
 def delete_albumart():
 	os.remove("cover.jpg")
 
+#fix URL if it is a single track out of a playlist
+if '?in=' in soundcloud_url:
+	soundcloud_url = soundcloud_url.split('?in=')
+	soundcloud_url = soundcloud_url[0]
+
 # Checks, whether the URL is a playlist or not
 if '/sets' in soundcloud_url:
 	permalink_url, trackid, track_title = get_trackids_playlist(soundcloud_url)
