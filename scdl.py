@@ -192,8 +192,6 @@ else:
 			track_name = track_name.replace("/", "-")
 	download_track(trackid, soundcloud_url, track_name);
 	track_name, artist, coverflag = get_tags(soundcloud_url)
-	if "/" in track_name:
-			track_name = track_name.replace("/", "-")
 	add_tags(track_name, artist, coverflag)
 	if coverflag == 1:
 		delete_albumart()
