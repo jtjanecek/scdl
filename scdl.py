@@ -159,44 +159,52 @@ def delete_albumart():
 	os.remove("cover.jpg")
 
 #Hide the cursor
-sys.stdout.write("\033[?25l")
-sys.stdout.flush()
-#fix URL if it is a single track out of a playlist
-if '?in=' in soundcloud_url:
-	soundcloud_url = soundcloud_url.split('?in=')
-	soundcloud_url = soundcloud_url[0]
+try:
+	sys.stdout.write("\033[?25l")
+	sys.stdout.flush()
+	#fix URL if it is a single track out of a playlist
+	if '?in=' in soundcloud_url:
+		soundcloud_url = soundcloud_url.split('?in=')
+		soundcloud_url = soundcloud_url[0]
 
-# Checks, whether the URL is a playlist or not
-if '/sets' in soundcloud_url:
-	permalink_url, trackid, track_title = get_trackids_playlist(soundcloud_url)
+	# Checks, whether the URL is a playlist or not
+	if '/sets' in soundcloud_url:
+		permalink_url, trackid, track_title = get_trackids_playlist(soundcloud_url)
 
-	for index in range(len(trackid)):
-		print track_title[index]
-		if "/" in track_title[index]:
-			track_title[index] = track_title[index].replace("/", "-")
-		download_track(trackid[index], permalink_url[index], track_title[index])
-		track_name, artist, coverflag = get_tags(permalink_url[index])
+		for index in range(len(trackid)):
+			print track_title[index]
+			if "/" in track_title[index]:
+				track_title[index] = track_title[index].replace("/", "-")
+			download_track(trackid[index], permalink_url[index], track_title[index])
+			track_name, artist, coverflag = get_tags(permalink_url[index])
+			if "/" in track_name:
+				track_name = track_name.replace("/", "-")
+			album = get_album_name(soundcloud_url)
+			add_tags(track_name, artist, coverflag)
+			if coverflag == 1:
+				delete_albumart()
+
+		print "\nDone!"
+		#Show cursor again
+		sys.stdout.write("\033[?25h")
+		sys.stdout.flush()
+
+
+	else:	
+		track_name, trackid = get_trackid_single_song(soundcloud_url)
 		if "/" in track_name:
-			track_name = track_name.replace("/", "-")
-		album = get_album_name(soundcloud_url)
+				track_name = track_name.replace("/", "-")
+		download_track(trackid, soundcloud_url, track_name);
+		track_name, artist, coverflag = get_tags(soundcloud_url)
 		add_tags(track_name, artist, coverflag)
 		if coverflag == 1:
 			delete_albumart()
+		print "\nDone!"
+		#Show cursor again
+		sys.stdout.write("\033[?25h")
+		sys.stdout.flush()
 
-	print "\nDone!"
-
-
-else:	
-	track_name, trackid = get_trackid_single_song(soundcloud_url)
-	if "/" in track_name:
-			track_name = track_name.replace("/", "-")
-	download_track(trackid, soundcloud_url, track_name);
-	track_name, artist, coverflag = get_tags(soundcloud_url)
-	add_tags(track_name, artist, coverflag)
-	if coverflag == 1:
-		delete_albumart()
-	print "\nDone!"
-
-#Show cursor again
-sys.stdout.write("\033[?25h")
-sys.stdout.flush()
+except:
+	print "\nAborting..."
+	sys.stdout.write("\033[?25h")
+	sys.stdout.flush()
