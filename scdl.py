@@ -197,7 +197,7 @@ else:
 	add_tags(track_name, artist, coverflag)
 	if coverflag == 1:
 		delete_albumart()
-	print "Done!"
+	print "\nDone!"
 
 #Show cursor again
 sys.stdout.write("\033[?25h")
