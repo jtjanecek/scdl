@@ -80,8 +80,23 @@ def download_track(trackid, song_url, track_title):
 	file_mp3_url = file_mp3_url.replace("\u0026", "&")
 
 	#Download the track
-	if not os.path.exists((track_title) + ".mp3"):
-		urllib.urlretrieve(file_mp3_url, u"%s" % track_title + ".mp3")
+	filename = u"%s" % track_title + ".mp3"
+	if not os.path.exists(filename):
+		with open(filename, "wb") as file:
+			filedl = requests.get(file_mp3_url, stream=True)
+			file_length = filedl.headers.get('content-length')
+			file_length = int(file_length)
+			downloaded = 0
+			for data in filedl.iter_content(chunk_size=file_length/100):
+				downloaded += len(data)
+				file.write(data)
+				done = int(50 * downloaded / file_length)
+				sys.stdout.write("\r[%s%s]" % ('=' * done, ' ' * (50-done)) )
+				sys.stdout.flush()
+
+			print "\n"
+	else:
+		pass
 
 def get_tags(soundcloud_url):
 	client_id = "fDoItMDbsbZz8dY16ZzARCZmzgHBPotA"
