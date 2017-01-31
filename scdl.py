@@ -94,7 +94,7 @@ def download_track(trackid, song_url, track_title):
 				sys.stdout.write("\r[%s%s]" % ('=' * done, ' ' * (50-done)) )
 				sys.stdout.flush()
 
-			print "\n"
+			#print "\n"
 	else:
 		pass
 
@@ -158,6 +158,9 @@ def add_tags(title, artist, coverflag):
 def delete_albumart():
 	os.remove("cover.jpg")
 
+#Hide the cursor
+sys.stdout.write("\033[?25l")
+sys.stdout.flush()
 #fix URL if it is a single track out of a playlist
 if '?in=' in soundcloud_url:
 	soundcloud_url = soundcloud_url.split('?in=')
@@ -180,7 +183,7 @@ if '/sets' in soundcloud_url:
 		if coverflag == 1:
 			delete_albumart()
 
-	print "Done!"
+	print "\nDone!"
 
 
 else:	
@@ -195,3 +198,7 @@ else:
 	if coverflag == 1:
 		delete_albumart()
 	print "Done!"
+
+#Show cursor again
+sys.stdout.write("\033[?25h")
+sys.stdout.flush()
