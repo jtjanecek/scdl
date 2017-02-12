@@ -48,7 +48,7 @@ def get_trackids_playlist(soundcloud_url):
 	playlist_api_url = "http://api.soundcloud.com/playlists/" + playlist_id + "?client_id=" + client_id
 	playlist_urls = requests.get(playlist_api_url)
 	permalink_urls = json.loads(playlist_urls.content)
-	print "Amount of tracks in the playlist:", len(permalink_urls["tracks"])
+	#print "Amount of tracks in the playlist:", len(permalink_urls["tracks"])
 
 	permalink_url = []
 	trackid = []
@@ -61,7 +61,7 @@ def get_trackids_playlist(soundcloud_url):
 		permalink_url[index] = permalink_urls["tracks"][index]["permalink_url"]
 		trackid[index] = permalink_urls["tracks"][index]["id"]
 		track_title[index] = permalink_urls["tracks"][index]["title"]
-		print index + 1, "\t", trackid[index], "\t", permalink_url[index]
+		#print index + 1, "\t", trackid[index], "\t", permalink_url[index]
 
 	return permalink_url, trackid, track_title
 
@@ -158,6 +158,32 @@ def add_tags(title, artist, coverflag):
 def delete_albumart():
 	os.remove("cover.jpg")
 
+def get_user_id (profile_url):
+	url = "https://api-mobi.soundcloud.com/resolve?permalink_url=" + profile_url + "&client_id=c8ce5cbca9160b790311f06638a61037&format=json&app_version=1481130054"
+	user_id = requests.get(url)
+	#print user_id.content
+	user_id = json.loads(user_id.content)
+	user_id = user_id["id"]
+	return user_id
+
+def get_user_tracks(user_id):
+	url = "https://api-v2.soundcloud.com/users/" + str(user_id) + "/tracks?representation=&client_id=fDoItMDbsbZz8dY16ZzARCZmzgHBPotA&limit=5000&offset=0&linked_partitioning=1&app_version=1486402392"
+	playlist = requests.get(url)
+	playlist = playlist.content
+	playlist = json.loads(playlist)
+	track_ids = []
+	permalink_url = []
+	track_name = []
+	for index in range(len(playlist["collection"])):
+		track_ids.append(index)
+		permalink_url.append(index)
+		track_name.append(index)
+		track_ids[index] = playlist["collection"][index]["id"]
+		permalink_url[index] = playlist["collection"][index]["permalink_url"]
+		track_name[index] = playlist["collection"][index]["title"]
+	return track_ids, permalink_url, track_name
+
+
 #Hide the cursor
 try:
 	sys.stdout.write("\033[?25l")
@@ -167,15 +193,50 @@ try:
 		soundcloud_url = soundcloud_url.split('?in=')
 		soundcloud_url = soundcloud_url[0]
 
+	#check for pattern in url, if it is a user page or a track page of a user
+	user_re = re.compile(r"^https:\/\/soundcloud.com\/[abcdefghijklmnopqrstuvwxyz\-_1234567890]{1,}$")
+	user_re_tracks = re.compile(r"^https:\/\/soundcloud.com\/[abcdefghijklmnopqrstuvwxyz\-_1234567890]{1,25}\/tracks$")
+	if (user_re.match(soundcloud_url)) or (user_re_tracks.match(soundcloud_url)):
+		user_id = get_user_id(soundcloud_url)
+		track_ids, permalink_url, track_title = get_user_tracks(user_id)
+		for index in range(len(track_ids)):
+
+			if "/" in track_title[index]:
+				track_title[index] = track_title[index].replace("/", "-")
+
+			print '\r[{}]/[{}] \t{}'.format(index + 1, max(range(len(track_ids))) + 1, track_title[index], track_title[index])
+			download_track(track_ids[index], permalink_url[index], track_title[index]),
+			print "\r                                                    "
+			#go to line above
+			sys.stdout.write("\033[F")
+			sys.stdout.flush() 
+			track_name, artist, coverflag = get_tags(permalink_url[index])
+			if "/" in track_name:
+				track_name = track_name.replace("/", "-")
+
+			album = artist
+			add_tags(track_name, artist, coverflag)
+			if coverflag == 1:
+				delete_albumart()
+
+		print "Done!"
+		#Show cursor again
+		sys.stdout.write("\033[?25h")
+		sys.stdout.flush()
+
 	# Checks, whether the URL is a playlist or not
 	if '/sets' in soundcloud_url:
 		permalink_url, trackid, track_title = get_trackids_playlist(soundcloud_url)
 
 		for index in range(len(trackid)):
-			print track_title[index]
 			if "/" in track_title[index]:
 				track_title[index] = track_title[index].replace("/", "-")
-			download_track(trackid[index], permalink_url[index], track_title[index])
+			print '\r[{}]/[{}] \t{}'.format(index + 1, max(range(len(trackid))) + 1, track_title[index], track_title[index])
+			download_track(trackid[index], permalink_url[index], track_title[index]),
+			print "\r                                                    "
+			#go to line above
+			sys.stdout.write("\033[F")
+			sys.stdout.flush() 
 			track_name, artist, coverflag = get_tags(permalink_url[index])
 			if "/" in track_name:
 				track_name = track_name.replace("/", "-")
@@ -184,7 +245,7 @@ try:
 			if coverflag == 1:
 				delete_albumart()
 
-		print "\nDone!"
+		print "Done!"
 		#Show cursor again
 		sys.stdout.write("\033[?25h")
 		sys.stdout.flush()
@@ -205,6 +266,6 @@ try:
 		sys.stdout.flush()
 
 except:
-	print "\nAborting..."
+	#print "\nAborting..."
 	sys.stdout.write("\033[?25h")
 	sys.stdout.flush()
