@@ -17,7 +17,7 @@ from mutagen.id3 import ID3, APIC
 
 def main():
 	#get url from user
-	soundcloud_url = unicode(raw_input("Please enter a URL:"))
+	soundcloud_url = unicode(raw_input("Please enter a URL: "))
 	link_type, soundcloud_url = link_detection(soundcloud_url)
 	hide_cursor()
 	try:
