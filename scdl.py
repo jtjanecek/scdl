@@ -104,7 +104,6 @@ def get_playlist_id(soundcloud_url):
 def get_playlist_tracks(playlist_id):
 	client_id = u"c8ce5cbca9160b790311f06638a61037"
 	playlist_api_url = u"http://api.soundcloud.com/playlists/" + playlist_id + u"?client_id=" + client_id
-	print playlist_api_url
 	playlist_urls = requests.get(playlist_api_url)
 	permalink_urls = json.loads(playlist_urls.content)
 
