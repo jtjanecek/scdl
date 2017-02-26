@@ -237,7 +237,8 @@ def download_user_tracks(soundcloud_url):
 		add_tags(track_name[index], artist[index], cover_file[index], album)
 
 def change_directory(folder_name):
-	print folder_name
+	if u"/" in folder_name:
+		folder_name = folder_name.replace(u"/", u"-")
 	if not os.path.exists(folder_name):
 		os.makedirs(folder_name)
 		os.chdir(folder_name)
