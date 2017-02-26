@@ -127,7 +127,7 @@ def download_playlist(soundcloud_url):
 	playlist_id = get_playlist_id(soundcloud_url)
 	print "Playlist ID:", playlist_id
 	permalink_url, trackid, track_name, album = get_playlist_tracks(playlist_id)
-
+	change_directory(album)
 	track_name = []
 	artist = []
 	coverflag = []
@@ -216,7 +216,7 @@ def download_user_tracks(soundcloud_url):
 	user_id = get_user_id(soundcloud_url)
 	print "User ID:", user_id
 	track_ids, permalink_url, track_name, album = get_user_tracks(user_id)
-
+	change_directory(album)
 	track_name = []
 	artist = []
 	coverflag = []
@@ -236,7 +236,13 @@ def download_user_tracks(soundcloud_url):
 		sys.stdout.flush()
 		add_tags(track_name[index], artist[index], cover_file[index], album)
 
-
+def change_directory(folder_name):
+	print folder_name
+	if not os.path.exists(folder_name):
+		os.makedirs(folder_name)
+		os.chdir(folder_name)
+	else:
+		os.chdir(folder_name)
 
 def get_tags(soundcloud_url):
 	client_id = "fDoItMDbsbZz8dY16ZzARCZmzgHBPotA"
@@ -278,7 +284,7 @@ def get_user_tracks(user_id):
 	playlist = requests.get(url)
 	playlist = playlist.content
 	playlist = json.loads(playlist)
-	album = playlist["collection"][0]["user"]["full_name"]
+	album = playlist["collection"][0]["user"]["username"]
 	track_ids = []
 	permalink_url = []
 	track_name = []
@@ -291,11 +297,10 @@ def get_user_tracks(user_id):
 		permalink_url[index] = playlist["collection"][index]["permalink_url"]
 		track_name[index] = playlist["collection"][index]["title"]
 
-	try:
-		if playlist["next_href"] is not None:
-			track_ids, permalink_url, track_name = get_user_tracks_recursion(playlist["next_href"], url, track_ids, permalink_url, track_name)
-	except:
-		return track_ids, permalink_url, track_name, album
+	if playlist["next_href"] is not None:
+		track_ids, permalink_url, track_name = get_user_tracks_recursion(playlist["next_href"], url, track_ids, permalink_url, track_name)
+
+	return track_ids, permalink_url, track_name, album
 
 def get_user_tracks_recursion(next_href, first_url, track_ids, permalink_url, track_name):
 	link_to_next_part = next_href.split("offset=")
