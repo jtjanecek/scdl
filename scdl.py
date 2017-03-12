@@ -1,4 +1,4 @@
-#scdl_rewrite
+#scdl
 # -*- coding: utf-8 -*-
 import sys
 import string
@@ -15,11 +15,15 @@ from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
 
+client_id = u"2t9loNQH90kzJcsFCODdigxfp325aq4z"
+app_version = u"1489155300"
+
 def main():
 	#get url from user
 	soundcloud_url = unicode(raw_input("Please enter a URL: "))
 	link_type, soundcloud_url = link_detection(soundcloud_url)
 	hide_cursor()
+
 	try:
 		if link_type == 1:
 			download_single_track(soundcloud_url)
@@ -91,8 +95,6 @@ def download_single_track(soundcloud_url):
 	print "\nDone!"
 
 def get_playlist_id(soundcloud_url):
-	client_id = u"c8ce5cbca9160b790311f06638a61037"
-	app_version = u"1481130054"
 	resolve_url = u"https://api-mobi.soundcloud.com/resolve?permalink_url=" + soundcloud_url + u"&client_id=" + client_id + u"&format=json&app_version=" + app_version
 	playlist_id_request = requests.get(resolve_url)
 
@@ -102,7 +104,6 @@ def get_playlist_id(soundcloud_url):
 	return unicode(playlist_id_request["id"])
 
 def get_playlist_tracks(playlist_id):
-	client_id = u"c8ce5cbca9160b790311f06638a61037"
 	playlist_api_url = u"http://api.soundcloud.com/playlists/" + playlist_id + u"?client_id=" + client_id
 	playlist_urls = requests.get(playlist_api_url)
 	permalink_urls = json.loads(playlist_urls.content)
@@ -182,8 +183,7 @@ def add_tags(track_name, artist, cover_file, album):
 def download_track(trackid, song_url, track_name):
 	trackid = str(trackid)
 	song_url = str(song_url)
-	client_id = "c8ce5cbca9160b790311f06638a61037"
-	get_mp3_url = "https://api.soundcloud.com/i1/tracks/" + trackid + "/streams?client_id=" + client_id + "&app_version=1482339819"
+	get_mp3_url = "https://api.soundcloud.com/i1/tracks/" + trackid + "/streams?client_id=" + client_id + "&app_version=" + app_version
 	mp3_url = requests.get(get_mp3_url)
 	file_mp3_url = mp3_url.content[21:]
 	x = '"'
@@ -192,7 +192,6 @@ def download_track(trackid, song_url, track_name):
 
 	#Step 3: Replace the \u0026 with &
 	file_mp3_url = file_mp3_url.replace("\u0026", "&")
-
 	#Download the track
 	filename = (u"%s" % track_name) + u".mp3"
 	if not os.path.exists(filename):
@@ -246,7 +245,6 @@ def change_directory(folder_name):
 		os.chdir(folder_name)
 
 def get_tags(soundcloud_url):
-	client_id = "fDoItMDbsbZz8dY16ZzARCZmzgHBPotA"
 	resolve_url = "https://api.soundcloud.com/resolve.json?url="
 	a = requests.get(resolve_url + soundcloud_url + "&client_id=" + client_id)
 	a = a.content
@@ -273,7 +271,7 @@ def get_tags(soundcloud_url):
 	return track_name, artist, coverflag, cover_file
 
 def get_user_id(soundcloud_url):
-	url = u"https://api-mobi.soundcloud.com/resolve?permalink_url=" + soundcloud_url + u"&client_id=c8ce5cbca9160b790311f06638a61037&format=json&app_version=1481130054"
+	url = u"https://api-mobi.soundcloud.com/resolve?permalink_url=" + soundcloud_url + u"&client_id=" + client_id + "&format=json&app_version=" + app_version
 	user_id = requests.get(url)
 	user_id = json.loads(user_id.content)
 	user_id = user_id["id"]
@@ -281,7 +279,7 @@ def get_user_id(soundcloud_url):
 
 def get_user_tracks(user_id):
 	offset = 0
-	url = u"https://api-v2.soundcloud.com/users/" + unicode(user_id) + u"/tracks?representation=&client_id=fDoItMDbsbZz8dY16ZzARCZmzgHBPotA&limit=5000&offset=0&linked_partitioning=1&app_version=1486402392"
+	url = u"https://api-v2.soundcloud.com/users/" + unicode(user_id) + u"/tracks?representation=&client_id=" + client_id + "&limit=5000&offset=0&linked_partitioning=1&app_version=" + app_version
 	playlist = requests.get(url)
 	playlist = playlist.content
 	playlist = json.loads(playlist)
@@ -324,7 +322,6 @@ def get_user_tracks_recursion(next_href, first_url, track_ids, permalink_url, tr
 		return track_ids, permalink_url, track_name
 
 def get_track_id(soundcloud_url):
-	client_id = u"fDoItMDbsbZz8dY16ZzARCZmzgHBPotA"
 	resolve_url = u"https://api.soundcloud.com/resolve.json?url="
 	url = resolve_url + soundcloud_url + u"&client_id=" + client_id
 	s = requests.get(resolve_url + soundcloud_url + u"&client_id=" + client_id)
@@ -334,4 +331,4 @@ def get_track_id(soundcloud_url):
 	return trackid
 
 if __name__ == '__main__':
-    main()
+	main()
