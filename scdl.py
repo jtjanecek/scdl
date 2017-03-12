@@ -250,9 +250,27 @@ def get_tags(soundcloud_url):
 	a = a.content
 	tags = json.loads(a)
 	track_name = u"%s" % tags["title"]
+
 	if u"/" in track_name:
 		track_name = track_name.replace(u"/", u"-")
-	
+	if u"\\" in track_name:
+		track_name = track_name.replace(u"\\", u"-")
+	if u"|" in track_name:
+		track_name = track_name.replace(u"|", u"-")
+	if u":" in track_name:
+		track_name = track_name.replace(u":", u"-")
+	if u"?" in track_name:
+		track_name = track_name.replace(u"?", u"-")
+	if u"<" in track_name:
+		track_name = track_name.replace(u"<", u"-")
+	if u">" in track_name:
+		track_name = track_name.replace(u">", u"-")
+	if u'"' in track_name:
+		track_name = track_name.replace(u'"', u"-")
+	if u"*" in track_name:
+		track_name = track_name.replace(u"*", u"-")
+
+
 	artist = u"%s" % tags["user"]["username"]
 	cover = tags["artwork_url"]
 	if cover is not None:
