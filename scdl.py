@@ -178,7 +178,7 @@ def add_tags(track_name, artist, cover_file, album):
 				data=out_file.read()
 				)
 			)
-		audio.save()
+		audio.save(v2_version=3)
 
 def download_track(trackid, song_url, track_name):
 	trackid = str(trackid)
