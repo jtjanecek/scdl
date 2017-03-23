@@ -162,14 +162,14 @@ def add_tags(track_name, artist, cover_file, album):
 		audio['album'] = u"%s" % album
 	else:
 		audio['album'] = u"SoundCloud"
+	audio.save(v2_version=3)
 	if cover_file is not 0:
 	    with tempfile.NamedTemporaryFile() as out_file:
 	    	shutil.copyfileobj(cover_file, out_file)
 	        out_file.seek(0)
 
-		audio.save()
-		audio = MP3(u"%s" % track_name + u".mp3", ID3=ID3)
-		audio.tags.add(
+		audio = ID3(u"%s" % track_name + u".mp3")
+		audio.add(
 			APIC(
 				encoding=3,
 				mime='image/jpeg',
