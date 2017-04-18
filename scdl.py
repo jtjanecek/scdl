@@ -226,6 +226,8 @@ def download_user_tracks(soundcloud_url):
 		artist.append(index)
 		coverflag.append(index)
 		cover_file.append(index)
+		if get_tags(permalink_url[index]) == 0:
+			continue
 		track_name[index], artist[index], coverflag[index], cover_file[index] = get_tags(permalink_url[index])
 		print u'\r[{}]/[{}] \t{}'.format(index + 1, max(range(len(track_ids))) + 1, track_name[index], track_name[index])
 		download_track(track_ids[index], permalink_url[index], track_name[index]),
@@ -249,6 +251,9 @@ def get_tags(soundcloud_url):
 	a = requests.get(resolve_url + soundcloud_url + "&client_id=" + client_id)
 	a = a.content
 	tags = json.loads(a)
+	if tags["duration"] == 30000:
+		print "This is a SoundCloud Go Plus-only track, skipping download."
+		return 0
 	track_name = u"%s" % tags["title"]
 
 	if u"/" in track_name:
