@@ -165,6 +165,7 @@ def add_tags(track_name, artist, cover_file, album, description):
 		audio['album'] = u"%s" % album
 	else:
 		audio['album'] = u"SoundCloud"
+	
 	audio.save(v2_version=3)
 	if cover_file is not 0:
 	    with tempfile.NamedTemporaryFile() as out_file:
