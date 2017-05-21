@@ -13,7 +13,7 @@ import shutil
 import tempfile
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
-from mutagen.id3 import ID3, APIC
+from mutagen.id3 import ID3, APIC, TIT2, TALB, TPE1, TPE2, COMM, USLT, TCOM, TCON, TDRC
 
 client_id = u"2t9loNQH90kzJcsFCODdigxfp325aq4z"
 app_version = u"1489155300"
@@ -34,8 +34,8 @@ def main():
 		elif link_type == 3:
 			download_user_tracks(soundcloud_url)
 			show_cursor()
-		#elif link_type == 4:
-		# TODO - ADD LIKES
+		elif link_type == 4:
+			download_user_likes(soundcloud_url)
 		else:
 			show_cursor()
 	except:		
@@ -89,9 +89,9 @@ def show_cursor():
 def download_single_track(soundcloud_url):
 	trackid = get_track_id(soundcloud_url)
 	print "Track ID:", trackid
-	track_name, artist, coverflag, cover_file = get_tags(soundcloud_url)
+	track_name, artist, coverflag, cover_file, description = get_tags(soundcloud_url)
 	download_track(trackid, soundcloud_url, track_name)
-	add_tags(track_name, artist, cover_file, 0)
+	add_tags(track_name, artist, cover_file, 0, description)
 	print "\nDone!"
 
 def get_playlist_id(soundcloud_url):
@@ -139,25 +139,27 @@ def download_playlist(soundcloud_url):
 		artist.append(index)
 		coverflag.append(index)
 		cover_file.append(index)
-		track_name[index], artist[index], coverflag[index], cover_file[index] = get_tags(permalink_url[index])
+		track_name[index], artist[index], coverflag[index], cover_file[index], description[index] = get_tags(permalink_url[index])
 		print u'\r[{}]/[{}] \t{}'.format(index + 1, max(range(len(trackid))) + 1, track_name[index], track_name[index])
 		download_track(trackid[index], permalink_url[index], track_name[index]),
 		print u"\r                                                    "
 		#go to line above
 		sys.stdout.write("\033[F")
 		sys.stdout.flush()
-		add_tags(track_name[index], artist[index], cover_file[index], album)
+		add_tags(track_name[index], artist[index], cover_file[index], album, description)
 
 	print "Done!"
 
-def add_tags(track_name, artist, cover_file, album):
+def add_tags(track_name, artist, cover_file, album, description):
 	try:
 		audio = EasyID3(u"%s" % track_name + u".mp3")
 	except mutagen.id3._util.ID3NoHeaderError:
 		audio = mutagen.File(u"%s" % track_name + u".mp3", easy=True)
 		audio.add_tags()
+	EasyID3.RegisterTextKey('comment', 'COMM')
 	audio['title'] = u"%s" % track_name
 	audio['artist'] = u"%s" % artist
+	#audio['comment'] = u"%s" % description
 	if album is not 0:
 		audio['album'] = u"%s" % album
 	else:
@@ -169,6 +171,15 @@ def add_tags(track_name, artist, cover_file, album):
 	        out_file.seek(0)
 
 		audio = ID3(u"%s" % track_name + u".mp3")
+		#audio[u"USLT::'eng'"] = (USLT(encoding=3, lang=u'en', desc=u'desc', text=description))
+		audio.add(
+			USLT(
+				encoding=3,
+				lang=u'eng',
+				desc=u'desc',
+				text=description
+				)
+			)
 		audio.add(
 			APIC(
 				encoding=3,
@@ -226,14 +237,79 @@ def download_user_tracks(soundcloud_url):
 		artist.append(index)
 		coverflag.append(index)
 		cover_file.append(index)
-		track_name[index], artist[index], coverflag[index], cover_file[index] = get_tags(permalink_url[index])
+		if get_tags(permalink_url[index]) == 0:
+			continue
+		track_name[index], artist[index], coverflag[index], cover_file[index], description[index] = get_tags(permalink_url[index])
 		print u'\r[{}]/[{}] \t{}'.format(index + 1, max(range(len(track_ids))) + 1, track_name[index], track_name[index])
 		download_track(track_ids[index], permalink_url[index], track_name[index]),
 		print u"\r                                                    "
 		#go to line above
 		sys.stdout.write("\033[F")
 		sys.stdout.flush()
-		add_tags(track_name[index], artist[index], cover_file[index], album)
+		add_tags(track_name[index], artist[index], cover_file[index], album, description)
+
+def download_user_likes(soundcloud_url):
+	user_id = get_user_id(soundcloud_url)
+	if user_id != None:
+		print user_id
+	else:
+		print "Couldn't get user ID, exiting."
+		return 0
+	print "About to get likes..."
+	track_ids, permalink_url, track_name, album = get_user_likes(user_id)
+	print len(track_ids)
+
+def get_user_likes(user_id):
+	like_url = "https://api-v2.soundcloud.com/users/" + str(user_id) + "/likes?client_id=" + str(client_id) + "&limit=300&offset=0&linked_partitioning=1&app_version=" + str(app_version)
+	print "Like URL:", like_url
+	likes = requests.get(like_url)
+	likes = likes.content
+	with open("likes.txt", "w") as file:
+		file.write(likes)
+	likes = json.loads(likes)
+	track_ids = []
+	permalink_url = []
+	track_name = []
+	print "Made empty lists"
+	for index in range(len(likes["collection"])):
+		print "Inside loop"
+		if likes["collection"][index]['track']:
+			print "Found a like"
+			track_ids.append(index)
+			permalink_url.append(index)
+			track_name.append(index)
+			track_ids[index] = likes["collection"][index]["track"]["id"]
+		else:
+			print "This is not a track, this is a playlist"
+		print track_ids(index)
+		permalink_url[index] = likes["collection"][index]["track"]["permalink_url"]
+		track_name[index] = likes["collection"][index]["track"]["title"]
+
+	if likes["next_href"] is not None:
+		track_ids, permalink_url, track_name = get_user_tracks_recursion(likes["next_href"], url, track_ids, permalink_url, track_name)
+
+	return track_ids, permalink_url, track_name, album
+
+def get_user_likes_recursion(next_href, first_url, track_ids, permalink_url, track_name):
+	link_to_next_part = next_href.split("offset=")
+	link_to_next_part = link_to_next_part[1].split("&representation=")
+	link_to_next_part = link_to_next_part[0]
+	link_to_next_part = first_url.replace("offset=0", "offset=" + str(link_to_next_part))
+	next_part = requests.get(link_to_next_part)
+	next_part = next_part.content
+	next_part = json.loads(next_part)
+
+	for index in range(len(next_part["collection"])):
+		track_ids.append(next_part["collection"][index]["id"])
+		permalink_url.append(next_part["collection"][index]["permalink_url"])
+		track_name.append(next_part["collection"][index]["title"])
+
+	if next_part["next_href"]:
+		get_user_tracks_recursion(next_part["next_href"], first_url, track_ids, permalink_url, track_name)
+
+	else:
+		return track_ids, permalink_url, track_name
+
 
 def change_directory(folder_name):
 	if u"/" in folder_name:
@@ -249,7 +325,12 @@ def get_tags(soundcloud_url):
 	a = requests.get(resolve_url + soundcloud_url + "&client_id=" + client_id)
 	a = a.content
 	tags = json.loads(a)
+	if tags["duration"] == 30000:
+		print "This is a SoundCloud Go Plus-only track, skipping download."
+		return 0
 	track_name = u"%s" % tags["title"]
+
+	description = u"%s" % tags["description"]
 
 	if u"/" in track_name:
 		track_name = track_name.replace(u"/", u"-")
@@ -285,8 +366,8 @@ def get_tags(soundcloud_url):
 
 	if (coverflag == 0):
 		cover_file = 0
-		return  track_name, artist, coverflag, cover_file
-	return track_name, artist, coverflag, cover_file
+		return  track_name, artist, coverflag, cover_file, description
+	return track_name, artist, coverflag, cover_file, description
 
 def get_user_id(soundcloud_url):
 	url = u"https://api-mobi.soundcloud.com/resolve?permalink_url=" + soundcloud_url + u"&client_id=" + client_id + "&format=json&app_version=" + app_version
