@@ -239,6 +239,7 @@ def download_user_tracks(soundcloud_url):
 		cover_file.append(index)
 		if get_tags(permalink_url[index]) == 0:
 			continue
+
 		track_name[index], artist[index], coverflag[index], cover_file[index], description[index] = get_tags(permalink_url[index])
 		print u'\r[{}]/[{}] \t{}'.format(index + 1, max(range(len(track_ids))) + 1, track_name[index], track_name[index])
 		download_track(track_ids[index], permalink_url[index], track_name[index]),
