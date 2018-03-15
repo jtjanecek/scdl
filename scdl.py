@@ -11,14 +11,18 @@ import os.path
 import mutagen
 import shutil
 import tempfile
+import argparse
+import logging
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC, TIT2, TALB, TPE1, TPE2, COMM, USLT, TCOM, TCON, TDRC
 
-client_id = u"2t9loNQH90kzJcsFCODdigxfp325aq4z"
-app_version = u"1489155300"
+client_id = u"g7pmPAwAmWJ8oGICV7nnp8VpdF2GdVca"
+app_version = u"1520423007"
+
 
 def main():
+	log()
 	#get url from user
 	soundcloud_url = unicode(raw_input("Please enter a URL: "))
 	link_type, soundcloud_url = link_detection(soundcloud_url)
@@ -88,7 +92,7 @@ def show_cursor():
 
 def download_single_track(soundcloud_url):
 	trackid = get_track_id(soundcloud_url)
-	print "Track ID:", trackid
+	logging.info("Track ID:", trackid)
 	track_name, artist, coverflag, cover_file, description = get_tags(soundcloud_url)
 	download_track(trackid, soundcloud_url, track_name)
 	add_tags(track_name, artist, cover_file, 0, description)
@@ -109,44 +113,48 @@ def get_playlist_tracks(playlist_id):
 	permalink_urls = json.loads(playlist_urls.content)
 
 	album = permalink_urls["title"]
+	logging.info("title: %s", album)
 
 	permalink_url = []
 	trackid = []
 	track_title = []
+	track_count = int(permalink_urls["track_count"])
 
-	for index in range(len(permalink_urls["tracks"])):
-		permalink_url.append(index)
-		trackid.append(index)
-		track_title.append(index)
-		permalink_url[index] = permalink_urls["tracks"][index]["permalink_url"]
-		trackid[index] = permalink_urls["tracks"][index]["id"]
-		track_title[index] = permalink_urls["tracks"][index]["title"]
+	for i in range(track_count):
+		permalink_url.append(i)
+		trackid.append(i)
+		track_title.append(i)
+		permalink_url[i] = permalink_urls["tracks"][i]["permalink_url"]
+		trackid[i] = permalink_urls["tracks"][i]["id"]
+		track_title[i] = permalink_urls["tracks"][i]["title"]
 
-	return permalink_url, trackid, track_title, album
+	print permalink_url
+	return permalink_url, trackid, track_title, album, track_count
 
 def download_playlist(soundcloud_url):
 	playlist_id = get_playlist_id(soundcloud_url)
 	print "Playlist ID:", playlist_id
-	permalink_url, trackid, track_name, album = get_playlist_tracks(playlist_id)
+	permalink_url, trackid, track_name, album, track_count = get_playlist_tracks(playlist_id)
 	change_directory(album)
 	track_name = []
 	artist = []
 	coverflag = []
 	cover_file = []
 
-	for index in range(len(trackid)):
+	for index in range(track_count):
+
 		track_name.append(index)
 		artist.append(index)
 		coverflag.append(index)
 		cover_file.append(index)
-		track_name[index], artist[index], coverflag[index], cover_file[index], description[index] = get_tags(permalink_url[index])
+		track_name[index], artist[index], coverflag[index], cover_file[index] = get_tags(permalink_url[index])
 		print u'\r[{}]/[{}] \t{}'.format(index + 1, max(range(len(trackid))) + 1, track_name[index], track_name[index])
 		download_track(trackid[index], permalink_url[index], track_name[index]),
 		print u"\r                                                    "
 		#go to line above
 		sys.stdout.write("\033[F")
 		sys.stdout.flush()
-		add_tags(track_name[index], artist[index], cover_file[index], album, description)
+		add_tags(track_name[index], artist[index], cover_file[index], album, 0)
 
 	print "Done!"
 
@@ -159,7 +167,8 @@ def add_tags(track_name, artist, cover_file, album, description):
 	EasyID3.RegisterTextKey('comment', 'COMM')
 	audio['title'] = u"%s" % track_name
 	audio['artist'] = u"%s" % artist
-	audio['comment'] = u"%s" % description
+	if description is not 0:
+		audio['comment'] = u"%s" % description
 
 	if album is not 0:
 		audio['album'] = u"%s" % album
@@ -220,7 +229,6 @@ def download_track(trackid, song_url, track_name):
 				sys.stdout.write("\r[%s%s]" % ('=' * done, ' ' * (50-done)) )
 				sys.stdout.flush()
 
-			#print "\n"
 	else:
 		pass
 
@@ -258,9 +266,7 @@ def download_user_likes(soundcloud_url):
 	else:
 		print "Couldn't get user ID, exiting."
 		return 0
-	print "About to get likes..."
 	track_ids, permalink_url, track_name, album = get_user_likes(user_id)
-	print len(track_ids)
 
 def get_user_likes(user_id):
 	like_url = "https://api-v2.soundcloud.com/users/" + str(user_id) + "/likes?client_id=" + str(client_id) + "&limit=300&offset=0&linked_partitioning=1&app_version=" + str(app_version)
@@ -273,17 +279,15 @@ def get_user_likes(user_id):
 	track_ids = []
 	permalink_url = []
 	track_name = []
-	print "Made empty lists"
+
 	for index in range(len(likes["collection"])):
-		print "Inside loop"
 		if likes["collection"][index]['track']:
-			print "Found a like"
 			track_ids.append(index)
 			permalink_url.append(index)
 			track_name.append(index)
 			track_ids[index] = likes["collection"][index]["track"]["id"]
 		else:
-			print "This is not a track, this is a playlist"
+			logging.info("This is not a track, this is a playlist")
 		print track_ids(index)
 		permalink_url[index] = likes["collection"][index]["track"]["permalink_url"]
 		track_name[index] = likes["collection"][index]["track"]["title"]
@@ -313,7 +317,6 @@ def get_user_likes_recursion(next_href, first_url, track_ids, permalink_url, tra
 	else:
 		return track_ids, permalink_url, track_name
 
-
 def change_directory(folder_name):
 	if u"/" in folder_name:
 		folder_name = folder_name.replace(u"/", u"-")
@@ -334,6 +337,8 @@ def get_tags(soundcloud_url):
 	track_name = u"%s" % tags["title"]
 
 	description = u"%s" % tags["description"]
+	description_array = [description]
+	print description_array
 
 	if u"/" in track_name:
 		track_name = track_name.replace(u"/", u"-")
@@ -354,23 +359,31 @@ def get_tags(soundcloud_url):
 	if u"*" in track_name:
 		track_name = track_name.replace(u"*", u"-")
 
+	logging.info("track_name: %s", track_name)
+	logging.info("description: %s", description)
 
 	artist = u"%s" % tags["user"]["username"]
+	logging.info("artist: %s", artist)
+
 	cover = tags["artwork_url"]
 	if cover is not None:
 		coverflag = 1
 		cover = cover.replace("large", "t500x500")
 		cover_request = requests.get(cover, stream=True)
 		cover_file = cover_request.raw
-		#cover_download = requests.get(cover)
-		#open('cover.jpg', 'w').write(cover_download.content)
+		logging.info("coverflag: %s", coverflag)
 	else:
 		coverflag = 0
+		logging.info("coverflag: %s", coverflag)
 
 	if (coverflag == 0):
 		cover_file = 0
-		return  track_name, artist, coverflag, cover_file, description
-	return track_name, artist, coverflag, cover_file, description
+		return  track_name, artist, coverflag, cover_file
+
+	logging.info(cover_file)
+	print "Does this thing ever return?"
+	return track_name, artist, coverflag, cover_file
+#	return track_name, artist, coverflag, cover_file, description
 
 def get_user_id(soundcloud_url):
 	url = u"https://api-mobi.soundcloud.com/resolve?permalink_url=" + soundcloud_url + u"&client_id=" + client_id + "&format=json&app_version=" + app_version
@@ -431,6 +444,22 @@ def get_track_id(soundcloud_url):
 	trackid = json.loads(s)
 	trackid = trackid["id"]
 	return trackid
+
+def log():
+	parser = argparse.ArgumentParser()
+	parser.add_argument(
+	    '-d', '--debug',
+	    help="Print lots of debugging statements",
+	    action="store_const", dest="loglevel", const=logging.DEBUG,
+	    default=logging.WARNING,
+	)
+	parser.add_argument(
+	    '-v', '--verbose',
+		    help="Be verbose",
+		action="store_const", dest="loglevel", const=logging.INFO,
+	)
+	args = parser.parse_args()    
+	logging.basicConfig(level=args.loglevel)
 
 if __name__ == '__main__':
 	main()
