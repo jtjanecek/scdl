@@ -93,7 +93,7 @@ def show_cursor():
 def download_single_track(soundcloud_url):
 	trackid = get_track_id(soundcloud_url)
 	logging.info("Track ID:", trackid)
-	track_name, artist, coverflag, cover_file, description = get_tags(soundcloud_url)
+	track_name, artist, coverflag, cover_file, description = get_tags(soundcloud_url, 1)
 	download_track(trackid, soundcloud_url, track_name)
 	add_tags(track_name, artist, cover_file, 0, description)
 	print "\nDone!"
@@ -147,7 +147,7 @@ def download_playlist(soundcloud_url):
 		artist.append(index)
 		coverflag.append(index)
 		cover_file.append(index)
-		track_name[index], artist[index], coverflag[index], cover_file[index] = get_tags(permalink_url[index])
+		track_name[index], artist[index], coverflag[index], cover_file[index] = get_tags(permalink_url[index], 0)
 		print u'\r[{}]/[{}] \t{}'.format(index + 1, max(range(len(trackid))) + 1, track_name[index], track_name[index])
 		download_track(trackid[index], permalink_url[index], track_name[index]),
 		print u"\r                                                    "
@@ -326,7 +326,7 @@ def change_directory(folder_name):
 	else:
 		os.chdir(folder_name)
 
-def get_tags(soundcloud_url):
+def get_tags(soundcloud_url, single_track_flag):
 	resolve_url = "https://api.soundcloud.com/resolve.json?url="
 	a = requests.get(resolve_url + soundcloud_url + "&client_id=" + client_id)
 	a = a.content
@@ -337,8 +337,6 @@ def get_tags(soundcloud_url):
 	track_name = u"%s" % tags["title"]
 
 	description = u"%s" % tags["description"]
-	description_array = [description]
-	print description_array
 
 	if u"/" in track_name:
 		track_name = track_name.replace(u"/", u"-")
@@ -381,9 +379,12 @@ def get_tags(soundcloud_url):
 		return  track_name, artist, coverflag, cover_file
 
 	logging.info(cover_file)
-	print "Does this thing ever return?"
-	return track_name, artist, coverflag, cover_file
-#	return track_name, artist, coverflag, cover_file, description
+
+	if single_track_flag is 1:
+		return track_name, artist, coverflag, cover_file, description
+
+	else:
+		return track_name, artist, coverflag, cover_file
 
 def get_user_id(soundcloud_url):
 	url = u"https://api-mobi.soundcloud.com/resolve?permalink_url=" + soundcloud_url + u"&client_id=" + client_id + "&format=json&app_version=" + app_version
