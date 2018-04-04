@@ -30,15 +30,19 @@ def main():
 
 	try:
 		if link_type == 1:
+			logging.info("This is a single track")
 			download_single_track(soundcloud_url)
 			show_cursor()
 		elif link_type == 2:
+			logging.info("This is a playlist")
 			download_playlist(soundcloud_url)
 			show_cursor()
 		elif link_type == 3:
+			logging.info("This is a list of user tracks")
 			download_user_tracks(soundcloud_url)
 			show_cursor()
 		elif link_type == 4:
+			logging.info("This is a list of user likes")
 			download_user_likes(soundcloud_url)
 		else:
 			show_cursor()
@@ -92,7 +96,7 @@ def show_cursor():
 
 def download_single_track(soundcloud_url):
 	trackid = get_track_id(soundcloud_url)
-	logging.info("Track ID:", trackid)
+	logging.info("Track ID: {}".format(trackid))
 	track_name, artist, coverflag, cover_file, description = get_tags(soundcloud_url, 1)
 	download_track(trackid, soundcloud_url, track_name)
 	add_tags(track_name, artist, cover_file, 0, description)
@@ -357,11 +361,11 @@ def get_tags(soundcloud_url, single_track_flag):
 	if u"*" in track_name:
 		track_name = track_name.replace(u"*", u"-")
 
-	logging.info("track_name: %s", track_name)
-	logging.info("description: %s", description)
+	logging.info("track_name: {}".format(track_name))
+	logging.info("description: {}".format(description))
 
 	artist = u"%s" % tags["user"]["username"]
-	logging.info("artist: %s", artist)
+	logging.info("artist: {}".format(artist))
 
 	cover = tags["artwork_url"]
 	if cover is not None:
@@ -369,10 +373,14 @@ def get_tags(soundcloud_url, single_track_flag):
 		cover = cover.replace("large", "t500x500")
 		cover_request = requests.get(cover, stream=True)
 		cover_file = cover_request.raw
-		logging.info("coverflag: %s", coverflag)
+		logging.info("coverflag: {}".format(coverflag))
 	else:
-		coverflag = 0
-		logging.info("coverflag: %s", coverflag)
+		coverflag = 1
+		cover = tags["user"]["avatar_url"]
+		cover = cover.replace("large", "t500x500")
+		cover_request = requests.get(cover, stream=True)
+		cover_file = cover_request.raw
+		logging.info("coverflag: {}".format(coverflag))
 
 	if (coverflag == 0):
 		cover_file = 0
