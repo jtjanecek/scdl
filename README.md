@@ -1,11 +1,8 @@
 # scdl - a simple SoundCloud downloader
 You run it, give it a track link or a playlist link and it gets downloaded. It's as simple as that.
 # Installation
-Requires modules to work!
 ```
-pip install requests
-pip install mutagen
-sudo ./install.sh
+sudo bash install.sh
 ```
 
 ![Screenshot](https://github.com/mrwnwttk/scdl/raw/master/images/screenshot.png)
