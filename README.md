@@ -3,6 +3,7 @@ You run it, give it a track link or a playlist link and it gets downloaded. It's
 # Installation
 ```
 sudo bash install.sh
+scdl
 ```
 
 ![Screenshot](https://github.com/mrwnwttk/scdl/raw/master/images/screenshot.png)
