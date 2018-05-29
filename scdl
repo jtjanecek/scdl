@@ -1,4 +1,5 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
+
 import sys
 import string
 import requests
@@ -32,7 +33,6 @@ def main():
 	soundcloud_url = unicode(raw_input("Please enter a URL: "))
 	link_type, soundcloud_url = link_detection(soundcloud_url)
 	hide_cursor()
-	download_single_track(soundcloud_url)
 	try:
 		if link_type == 1:
 			logging.info("This is a single track")
@@ -346,7 +346,6 @@ def get_tags(soundcloud_url, single_track_flag):
 	track_name = u"%s" % tags["title"]
 
 	description = u"%s" % tags["description"]
-	print description
 
 	if u"/" in track_name:
 		track_name = track_name.replace(u"/", u"-")
@@ -369,7 +368,6 @@ def get_tags(soundcloud_url, single_track_flag):
 
 	logging.info("track_name: {}".format(track_name))
 	logging.info("description: {}".format(description))
-	print "does it get this far?"
 
 	artist = u"%s" % tags["user"]["username"]
 	logging.info("artist: {}".format(artist))
