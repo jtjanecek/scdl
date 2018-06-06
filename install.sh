@@ -37,7 +37,9 @@ if [ -d /usr/local/bin/scdl ]; then
 	rm -rf /usr/local/bin/scdl
 fi
 
-cp scdl /usr/local/bin/scdl
+installerPath="`dirname "${0}"`"
+
+cp $installerPath/scdl /usr/local/bin/scdl
 chmod a+rx /usr/local/bin/scdl
 
 echo "Installed!"
