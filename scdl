@@ -16,8 +16,13 @@ import logging
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC, TIT2, TALB, TPE1, TPE2, COMM, USLT, TCOM, TCON, TDRC
-
-client_id = u"5IHUoTCYwQmJR7RbijX9OigWp2zCoiyC"
+'''
+We have to use the client_id of another app as Soundcloud is no longer taking requests for new user applications
+and therefore doesn't allow us to create a new one that is made specifically for this program. Instead, we have no other
+choice (if we don't want to keep updating the app constantly)other than to use the client_id youtube-dl has embedded in
+its source code.
+'''
+client_id = u"FweeGBOOEOYJWLJN3oEyToGLKhmSz0I7"
 app_version = u"1520423007"
 
 
