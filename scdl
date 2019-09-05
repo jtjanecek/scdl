@@ -13,6 +13,7 @@ import shutil
 import tempfile
 import argparse
 import logging
+import codecs
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC, TIT2, TALB, TPE1, TPE2, COMM, USLT, TCOM, TCON, TDRC
@@ -162,7 +163,7 @@ def download_playlist(soundcloud_url):
 		coverflag.append(index)
 		cover_file.append(index)
 		track_name[index], artist[index], coverflag[index], cover_file[index] = get_tags(permalink_url[index], 0)
-		print u'\r[{}]/[{}] \t{}'.format(index + 1, max(range(len(trackid))) + 1, track_name[index], track_name[index])
+		print "\r[{}]/[{}] \t{}".format(index + 1, max(range(len(trackid))) + 1, track_name[index].decode('UTF-8'), track_name[index].decode('UTF-8'))
 		download_track(trackid[index], permalink_url[index], track_name[index]),
 		print u"\r                                                    "
 		#go to line above
@@ -349,8 +350,10 @@ def get_tags(soundcloud_url, single_track_flag):
 		print "This is a SoundCloud Go Plus-only track, skipping download."
 		return 0
 	track_name = u"%s" % tags["title"]
+	track_name = track_name.decode('UTF-8')
 
 	description = u"%s" % tags["description"]
+	description = description.decode('UTF-8')
 
 	if u"/" in track_name:
 		track_name = track_name.replace(u"/", u"-")
@@ -371,10 +374,15 @@ def get_tags(soundcloud_url, single_track_flag):
 	if u"*" in track_name:
 		track_name = track_name.replace(u"*", u"-")
 
-	logging.info("track_name: {}".format(track_name))
+	try:
+		logging.info("track_name: {}".format(track_name))
+	except :
+		logging.info("ERROR! CANNOT DISPLAY TRACK NAME!")
+		raise
 	logging.info("description: {}".format(description))
 
 	artist = u"%s" % tags["user"]["username"]
+	artist = artist.decode('UTF-8')
 	logging.info("artist: {}".format(artist))
 
 	cover = tags["artwork_url"]
