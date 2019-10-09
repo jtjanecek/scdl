@@ -6,23 +6,22 @@ if [ "$EUID" -ne 0 ]
 fi
 
 {
-	which pip
+	which pip3
 } &> /dev/null
 
 if [ $? ==  1 ]; then
-	echo "Pip is not installed. Downloading it now."
-	curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-	python get-pip.py
+	echo "Pip3 is not installed. Please download and install it before proceeding."
+	exit
 fi
 
-if ! python -c "import requests" &> /dev/null; then
+if ! python3 -c "import requests" &> /dev/null; then
 	echo "The requests module is missing. Installing it now..."
-    python -m pip install requests
+    python3 -m pip install requests
 fi
 
-if ! python -c "import mutagen" &> /dev/null; then
+if ! python3 -c "import mutagen" &> /dev/null; then
 	echo "The mutagen module is missing. Installing it now..."
-    python -m pip install mutagen
+    python3 -m pip install mutagen
 fi
 
 if [ -f /bin/scdl ]; then
