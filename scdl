@@ -37,6 +37,7 @@ def main():
             downloadPlaylist(soundcloudUrl, 1)
         if premiumFlag == 0:
             downloadPlaylist(soundcloudUrl, 0)
+
     if playlistFlag == 0:
         linkType, soundcloudUrl = linkDetection(soundcloudUrl)
         if linkType == 1 and premiumFlag == 1:
@@ -505,27 +506,27 @@ def parseStuff():
     parser.add_argument(
         '-p','--premium',
         help="Use if you are a subscriber to SoundCloud Go Plus",
-        action="store_const",
+        action="store_true",
         dest="premium",
-        const="soundcloudgoplus",
         )
     parser.add_argument(
         '-pl','--playlist',
         help="Download a playlist instead of a single track",
-        action="store_const",
+        action="store_true",
         dest="playlistFlag",
-        const="1",
         )
     args = parser.parse_args()
-    if args.premium:
+    if args.premium is True:
         global premiumFlag
         premiumFlag = 1
-        print("Premium!")
-    if args.playlistFlag:
+        print("Premium flag set!")
+    else:
+        premiumFlag = 0
+    if args.playlistFlag is True:
         global playlistFlag
         playlistFlag = 1
         print("Downloading a playlist!")
-    if args.playlistFlag is None:
+    if args.playlistFlag is False:
         playlistFlag = 0
 
 if __name__ == '__main__':
