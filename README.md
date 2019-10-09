@@ -3,7 +3,7 @@ You run it, give it a track link or a playlist link and it gets downloaded. It's
 Can also download 256kbps m4a files, not just 128kbps mp3 files!
 ## Usage
 ```
-usage: scdlpy3.py [-h] [-p] [-pl]
+usage: scdl [-h] [-p] [-pl]
 
 optional arguments:
   -h, --help       show this help message and exit
