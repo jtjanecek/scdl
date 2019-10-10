@@ -10,6 +10,7 @@ import tempfile
 import shutil
 import urllib
 import argparse
+import ssl
 from mutagen.easyid3 import EasyID3
 from mutagen.mp4 import MP4, MP4Cover
 from mutagen.mp3 import EasyMP3
@@ -26,6 +27,7 @@ kept breaking so freaking often).
 '''
 clientId = "FweeGBOOEOYJWLJN3oEyToGLKhmSz0I7"
 appVersion = "1520423007"
+ssl._create_default_https_context = ssl._create_unverified_context
 
 def main():
     parseStuff()
