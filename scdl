@@ -218,9 +218,13 @@ def cleanUp(trackId, trackName):
     if os.name == 'nt':
         os.system("del " + str(trackId) + ".*")
         os.system("del cover.jpg")
-        if os.path.getsize(repairFilename(trackName) + ".m4a") == 0:
-            os.remove(repairFilename(trackName) + ".m4a")
-    else:
+        try:
+            if os.path.getsize(repairFilename(trackName) + ".m4a") == 0:
+                os.remove(repairFilename(trackName) + ".m4a")
+        except:
+            if os.path.getsize(repairFilename(trackName) + ".mp3") == 0:
+                os.remove(repairFilename(trackName) + ".mp3")
+    else: 
         os.system("rm -rf " + str(trackId) + ".*")
         os.system("rm -rf cover.jpg")
         os.system("find -name '" + str(trackId) + "*' -size 0 -delete")
