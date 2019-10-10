@@ -373,7 +373,8 @@ def addTags(trackName, artist, album, coverFlag, description, m4aFlag):
     if m4aFlag == 1:
         repairedFilename = repairFilename(trackName)
         tags = MP4(repairedFilename + ".m4a").tags
-        tags["desc"] = description
+        if description is not None:
+            tags["desc"] = description
         tags["\xa9nam"] = trackName
         if album is not 0:
             tags["\xa9alb"] = album
@@ -403,14 +404,15 @@ def addTags(trackName, artist, album, coverFlag, description, m4aFlag):
 
         if coverFlag is not 0:
             audio = ID3(str(repairedFilename) + u".mp3")
-            audio.add(
-            USLT(
-                encoding=3,
-                lang=u'eng',
-                desc=u'desc',
-                text=description
+            if description is not None:
+                audio.add(
+                USLT(
+                    encoding=3,
+                    lang=u'eng',
+                    desc=u'desc',
+                    text=description
+                    )
                 )
-            )
             with open('cover.jpg', 'rb') as albumart:     
                 audio.add(
                 APIC(
@@ -421,12 +423,6 @@ def addTags(trackName, artist, album, coverFlag, description, m4aFlag):
                     data=albumart.read()
                     )
                 )
-            audio.add(
-            COMM(
-                encoding=3,
-                text=description
-                )
-            )
             audio.save(v2_version=3)
 
 def downloadPlaylist(soundcloudUrl, hqFlag):
