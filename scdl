@@ -10,6 +10,7 @@ import tempfile
 import shutil
 import urllib
 import argparse
+import ssl
 from mutagen.easyid3 import EasyID3
 from mutagen.mp4 import MP4, MP4Cover
 from mutagen.mp3 import EasyMP3
@@ -26,6 +27,7 @@ kept breaking so freaking often).
 '''
 clientId = "FweeGBOOEOYJWLJN3oEyToGLKhmSz0I7"
 appVersion = "1520423007"
+ssl._create_default_https_context = ssl._create_unverified_context
 
 def main():
     parseStuff()
@@ -96,7 +98,6 @@ def downloadSingleTrack(soundcloudUrl, hqFlag, optionalAlbum):
         album = optionalAlbum
     else:
         album = "SoundCloud"
-
     '''
     m4a premium download, only happens when both flags are set
     '''
@@ -120,9 +121,6 @@ def downloadSingleTrack(soundcloudUrl, hqFlag, optionalAlbum):
         except:
             pass
 
-    '''
-    if any 
-    '''
     if premiumFlag == 0 or hqFlag == 0 or size == 0:
         '''
         Takes effect when the download either failed or the premium
@@ -207,6 +205,8 @@ def renameFile(trackId, trackName, premiumFlag):
     if premiumFlag == 0:
         oldFilename = str(trackId) + '.mp3'
         newFilename = str(trackName) + '.mp3'
+    if os.path.exists(newFilename):
+        os.remove(newFilename)
     os.rename(oldFilename, newFilename)
 
 def cleanUp(trackId, trackName):
@@ -214,11 +214,17 @@ def cleanUp(trackId, trackName):
     Removes all the leftover files, both the ones from the successful
     as well as the failed downloads which are basically just empty files
     '''
-
-    os.system("rm -rf " + str(trackId) + ".*")
-    os.system("rm -rf cover.jpg")
-    os.system("find -name '" + str(trackId) + "*' -size 0 -delete")
-    os.system("find -name '" + trackName + "*' -size 0 -delete")
+    #Check for Windows
+    if os.name == 'nt':
+        os.system("del " + str(trackId) + ".*")
+        os.system("del cover.jpg")
+        if os.path.getsize(repairFilename(trackName) + ".m4a") == 0:
+            os.remove(repairFilename(trackName) + ".m4a")
+    else:
+        os.system("rm -rf " + str(trackId) + ".*")
+        os.system("rm -rf cover.jpg")
+        os.system("find -name '" + str(trackId) + "*' -size 0 -delete")
+        os.system("find -name '" + repairFilename(trackName) + "*' -size 0 -delete")
 
 def changeDirectory(folderName):
     '''
@@ -251,7 +257,7 @@ def downloadPremium(trackId):
     hacky solution will continue to work. Probably until I cancel
     my SoundCloud Go Plus subscription (or rather trial)
     '''
-    curlPremiumJsonUrl = u"curl 'https://api-v2.soundcloud.com/tracks?ids=" + str(trackId) + u"&client_id=GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy&%5Bobject%20Object%5D=&app_version=1570441876&app_locale=de' -H 'Sec-Fetch-Mode: cors' -H 'Origin: https://soundcloud.com' -H 'Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39' -H 'Content-Type: application/json' -H 'Accept: application/json, text/javascript, */*; q=0.1' -H 'Referer: https://soundcloud.com/' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36' -H 'DNT: 1' --compressed > " + str(trackId) + u".txt"
+    curlPremiumJsonUrl = u"curl \"https://api-v2.soundcloud.com/tracks?ids=" + str(trackId) + u"&client_id=GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy&%5Bobject%20Object%5D=&app_version=1570441876&app_locale=de\" -H \"Sec-Fetch-Mode: cors\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"Content-Type: application/json\" -H \"Accept: application/json, text/javascript, */*; q=0.1\" -H \"Referer: https://soundcloud.com/\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"DNT: 1\" -k --compressed > " + str(trackId) + u".txt"
     os.system(curlPremiumJsonUrl)
     jsonFilename = str(trackId) + u".txt"
     with open(jsonFilename) as f:
@@ -265,7 +271,7 @@ def downloadPremium(trackId):
     That link to the hls stream leads to yet another link, which
     contains yet another link, which contains...
     '''
-    curlPremiumm3u8 = "curl '" + url + "' -H 'Sec-Fetch-Mode: cors' -H 'Referer: https://soundcloud.com/' -H 'Origin: https://soundcloud.com' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36' -H 'Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39' -H 'DNT: 1' --compressed > " + str(trackId) + ".txt"
+    curlPremiumm3u8 = "curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k --compressed > " + str(trackId) + ".txt"
     os.system(curlPremiumm3u8)
     m3u8Filename = str(trackId) + ".txt"
     with open(m3u8Filename) as f:
@@ -277,7 +283,7 @@ def downloadPremium(trackId):
     it basically only replicates excactly what a browser would do (go
     look at the network tab in the explore tool and see for yourself)
     '''
-    os.system("curl '" + url + "' -H 'Sec-Fetch-Mode: cors' -H 'Referer: https://soundcloud.com/' -H 'Origin: https://soundcloud.com' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36' -H 'Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39' -H 'DNT: 1' --compressed > " + str(trackId) + ".m3u8")
+    os.system("curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k --compressed > " + str(trackId) + ".m3u8")
 
     '''
     Stitch the .m4a together using ffmpeg. Thank God I don't have to do this by hand.
