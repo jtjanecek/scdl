@@ -14,6 +14,10 @@ optional arguments:
 ## Compatibility
 I've only tested this on Linux, but if you can get ffmpeg as well as the various modules installed it should work just fine. Don't blame me though in case anything breaks.
 
+Note:
+```
+Windows does not ship with a compatible version of curl (W10: 7.55.1 afaik) and needs to be updated (preferably to 7.66.0), because it does not support the --compressed parameter.
+```
 ## Requirements
 
 * Python 3
@@ -26,5 +30,5 @@ sudo bash install.sh
 scdl
 ```
 
-## Note
+## Disclaimer
 If a track says “NOT AVAILABLE IN YOUR COUNTRY”, then this tool can’t download the track without a VPN/Proxy/whatever and I can’t change that. Use said tools to get around this.
