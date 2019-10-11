@@ -215,21 +215,13 @@ def cleanUp(trackId, trackName):
     Removes all the leftover files, both the ones from the successful
     as well as the failed downloads which are basically just empty files
     '''
-    #Check for Windows
-    if os.name == 'nt':
-        os.system("del " + str(trackId) + ".*")
-        os.system("del cover.jpg")
-        try:
-            if os.path.getsize(repairFilename(trackName) + ".m4a") == 0:
-                os.remove(repairFilename(trackName) + ".m4a")
-        except:
-            if os.path.getsize(repairFilename(trackName) + ".mp3") == 0:
-                os.remove(repairFilename(trackName) + ".mp3")
-    else: 
-        os.system("rm -rf " + str(trackId) + ".*")
-        os.system("rm -rf cover.jpg")
-        os.system("find -name '" + str(trackId) + "*' -size 0 -delete")
-        os.system("find -name '" + repairFilename(trackName) + "*' -size 0 -delete")
+    os.remove("cover.jpg")
+    os.remove(str(trackId) + ".txt")
+    os.remove(str(trackId) + ".m3u8")
+    if os.path.isfile(str(trackId) + ".m4a") == True:
+        if os.path.getsize(str(trackId) + ".m4a") == 0:
+            if os.path.isfile(repairFilename(trackName) + ".mp3"):
+                os.remove(str(trackId) + ".m4a")
 
 def changeDirectory(folderName):
     '''
