@@ -338,7 +338,7 @@ def getTags(soundcloudUrl):
     but we can fix that ourselves!
     '''
     cover = tags["artwork_url"]
-    if cover is not None:
+    if cover != None:
         coverFlag = 1
         cover = cover.replace("large", "t500x500")
         urllib.request.urlretrieve(cover, "cover.jpg")
@@ -385,10 +385,10 @@ def addTags(trackName, artist, album, coverFlag, description, m4aFlag):
     if m4aFlag == 1:
         repairedFilename = repairFilename(trackName)
         tags = MP4(repairedFilename + ".m4a").tags
-        if description is not None:
+        if description != None:
             tags["desc"] = description
         tags["\xa9nam"] = trackName
-        if album is not 0:
+        if album != 0:
             tags["\xa9alb"] = album
         else:
             tags["\xa9alb"] = "SoundCloud"
@@ -408,15 +408,15 @@ def addTags(trackName, artist, album, coverFlag, description, m4aFlag):
         audio['title'] = trackName
         audio['artist'] = artist
 
-        if album is not 0:
+        if album != 0:
             audio['album'] = album
         else:
             audio['album'] = u"SoundCloud"
         audio.save(v2_version=3)
 
-        if coverFlag is not 0:
+        if coverFlag != 0:
             audio = ID3(str(repairedFilename) + u".mp3")
-            if description is not None:
+            if description != None:
                 audio.add(
                 USLT(
                     encoding=3,
