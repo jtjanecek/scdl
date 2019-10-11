@@ -38,7 +38,7 @@ fi
 
 installerPath="${0%/*}"
 
-cp $installerPath/scdl /usr/local/bin/scdl
+cp "$installerPath"/scdl /usr/local/bin/scdl
 chmod a+rx /usr/local/bin/scdl
 
 echo "Installed!"
