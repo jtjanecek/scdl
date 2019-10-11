@@ -20,7 +20,7 @@ Windows does not ship with a compatible version of curl (W10: 7.55.1 afaik) and 
 ```
 ## Requirements
 
-* Python 3
+* Python3.6
 * ffmpeg
 * pip3
 
