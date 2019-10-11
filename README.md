@@ -1,13 +1,13 @@
 # scdl - a simple SoundCloud downloader
 You run it, give it a track link or a playlist link and it gets downloaded. It's as simple as that.
-Can also download 256kbps m4a files, not just 128kbps mp3 files!
+Can also download 256kbps m4a files, not just 128kbps mp3 files! You do **NOT** need to own a premium account to use this tool.
 ## Usage
 ```
 usage: scdl [-h] [-p] [-pl]
 
 optional arguments:
   -h, --help       show this help message and exit
-  -p, --premium    Use if you are a subscriber to SoundCloud Go Plus
+  -p, --premium    Use to download 256kbps M4A files
   -pl, --playlist  Download a playlist instead of a single track
 ```
 
