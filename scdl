@@ -112,7 +112,6 @@ def downloadSingleTrack(soundcloudUrl, hqFlag, optionalAlbum):
             successful or not :)
             '''
             size = os.path.getsize(str(trackId) + ".m4a")
-            print(size)
             if size != 0:
                 '''
                 Set flag in case the download failed
@@ -186,6 +185,8 @@ def repairFilename(trackName):
         trackName = trackName.replace(u'"', u"-")
     if u"*" in trackName:
         trackName = trackName.replace(u"*", u"-")
+    if u"..." in trackName:
+        trackName = trackName.replace(u"...", u"---")
 
     return trackName
 
@@ -234,6 +235,7 @@ def changeDirectory(folderName):
     '''
     makes directory with the name of the album passed to it, creates it if needed
     '''
+    folderName = repairFilename(folderName)
     if "/" in folderName:
         folderName.replace("/","-")
     if not os.path.exists(folderName):
@@ -261,7 +263,7 @@ def downloadPremium(trackId):
     hacky solution will continue to work. Probably until I cancel
     my SoundCloud Go Plus subscription (or rather trial)
     '''
-    curlPremiumJsonUrl = u"curl \"https://api-v2.soundcloud.com/tracks?ids=" + str(trackId) + u"&client_id=GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy&%5Bobject%20Object%5D=&app_version=1570441876&app_locale=de\" -H \"Sec-Fetch-Mode: cors\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"Content-Type: application/json\" -H \"Accept: application/json, text/javascript, */*; q=0.1\" -H \"Referer: https://soundcloud.com/\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"DNT: 1\" -k --compressed > " + str(trackId) + u".txt"
+    curlPremiumJsonUrl = u"curl \"https://api-v2.soundcloud.com/tracks?ids=" + str(trackId) + u"&client_id=GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy&%5Bobject%20Object%5D=&app_version=1570441876&app_locale=de\" -H \"Sec-Fetch-Mode: cors\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"Content-Type: application/json\" -H \"Accept: application/json, text/javascript, */*; q=0.1\" -H \"Referer: https://soundcloud.com/\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + u".txt"
     os.system(curlPremiumJsonUrl)
     jsonFilename = str(trackId) + u".txt"
     with open(jsonFilename) as f:
@@ -275,7 +277,7 @@ def downloadPremium(trackId):
     That link to the hls stream leads to yet another link, which
     contains yet another link, which contains...
     '''
-    curlPremiumm3u8 = "curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k --compressed > " + str(trackId) + ".txt"
+    curlPremiumm3u8 = "curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".txt"
     os.system(curlPremiumm3u8)
     m3u8Filename = str(trackId) + ".txt"
     with open(m3u8Filename) as f:
@@ -287,13 +289,13 @@ def downloadPremium(trackId):
     it basically only replicates excactly what a browser would do (go
     look at the network tab in the explore tool and see for yourself)
     '''
-    os.system("curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k --compressed > " + str(trackId) + ".m3u8")
+    os.system("curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".m3u8")
 
     '''
     Stitch the .m4a together using ffmpeg. Thank God I don't have to do this by hand.
     By the way, ffmpeg hates https so it needs to be whitelisted.
     '''
-    ffmpegCommand = "ffmpeg -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".m4a"
+    ffmpegCommand = "ffmpeg -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".m4a -loglevel panic"
     os.system(ffmpegCommand)
 
 def downloadRegular(trackId):
@@ -326,7 +328,6 @@ def getTags(soundcloudUrl):
     try:
         print("trackName: {}".format(trackName))
     except :
-        print("ERROR: CANNOT DISPLAY TRACK NAME!")
         raise
 
     artist = tags["user"]["username"]
@@ -342,7 +343,6 @@ def getTags(soundcloudUrl):
         coverFlag = 1
         cover = cover.replace("large", "t500x500")
         urllib.request.urlretrieve(cover, "cover.jpg")
-        print("coverFlag: {}".format(coverFlag))
 
     else:
         '''
@@ -350,13 +350,16 @@ def getTags(soundcloudUrl):
         avatar of the user is shown instead. We can implement that
         here. Once again the full size picture is not in the json file...
         '''
-        coverFlag = 1
-        cover = tags["user"]["avatar_url"]
-        cover = cover.replace("large", "t500x500")
-        #cover_request = requests.get(cover, stream=True)
-        #cover_file = cover_request.raw
-        urllib.request.urlretrieve(cover, "cover.jpg")
-        print("coverFlag: {}".format(coverFlag))
+        try:
+            coverFlag = 1
+            cover = tags["user"]["avatar_url"]
+            cover = cover.replace("large", "t500x500")
+            #cover_request = requests.get(cover, stream=True)
+            #cover_file = cover_request.raw
+            urllib.request.urlretrieve(cover, "cover.jpg")
+        except urllib.error.HTTPError:
+            coverFlag = 0
+
 
     return trackName, artist, coverFlag
 
@@ -464,18 +467,27 @@ def getPlaylistTracks(playlistId):
     playlistUrls = requests.get(playlistApiUrl)
     permalinkUrls = json.loads(playlistUrls.content)
     album = permalinkUrls["title"]
+    print("Album: {}".format(album))
     permalinkUrl = []
     trackId = []
     trackTitle = []
     trackCount = int(permalinkUrls["track_count"])
 
     for i in range(trackCount):
-        permalinkUrl.append(i)
-        trackId.append(i)
-        trackTitle.append(i)
-        permalinkUrl[i] = permalinkUrls["tracks"][i]["permalink_url"]
-        trackId[i] = permalinkUrls["tracks"][i]["id"]
-        trackTitle[i] = permalinkUrls["tracks"][i]["title"]
+        try:
+            permalinkUrl.append(i)
+            trackId.append(i)
+            trackTitle.append(i)
+            permalinkUrl[i] = permalinkUrls["tracks"][i]["permalink_url"]
+            trackId[i] = permalinkUrls["tracks"][i]["id"]
+            trackTitle[i] = permalinkUrls["tracks"][i]["title"]
+        except IndexError:
+            missingTracks = trackCount - i
+            print("Sorry, {} of the tracks in this playlist are not available".format(str(missingTracks)),
+                "in your country and can therefore not be downloaded.",
+                "Please use a VPN.")
+            trackCount = i
+            break
 
     return permalinkUrl, trackId, trackTitle, album, trackCount    
 
@@ -495,8 +507,11 @@ def getPlaylistDescriptions(playlistId):
     trackCount = int(permalinkUrls["track_count"])
 
     for i in range(trackCount):
-        description.append(i)
-        description[i] = permalinkUrls["tracks"][i]["description"]
+        try:
+            description.append(i)
+            description[i] = permalinkUrls["tracks"][i]["description"]
+        except IndexError:
+            break
 
     return description    
 
