@@ -268,7 +268,6 @@ def downloadPremium(trackId):
     jsonFilename = str(trackId) + u".txt"
     with open(jsonFilename) as f:
         data = json.loads(f.read())
-        print(data[0]['media']['transcodings'][0]['url'])
         url = data[0]['media']['transcodings'][0]['url']
     url = url + "?client_id=GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy"
 
