@@ -59,9 +59,7 @@ def linkDetection(soundcloudUrl):
     return 2 = playlist
     '''
     #Fix a missing https://
-    httpsRegex = re.compile(r"^https:\/\/soundcloud\.com.{1,}$")
-    if not (httpsRegex.match(soundcloudUrl)):
-        soundcloudUrl = "{}{}".format(u"https://", soundcloudUrl)
+    soundcloudUrl = soundcloudUrl.replace("http://", "https://")
 
     #Fix URL if it is a single track out of a playlist
     if '?in=' in soundcloudUrl:
