@@ -215,9 +215,12 @@ def cleanUp(trackId, trackName):
     Removes all the leftover files, both the ones from the successful
     as well as the failed downloads which are basically just empty files
     '''
-    os.remove("cover.jpg")
-    os.remove(str(trackId) + ".txt")
-    os.remove(str(trackId) + ".m3u8")
+    if os.path.isfile("cover.jpg") == True:
+        os.remove("cover.jpg")
+    if os.path.isfile(str(trackId) + ".txt") == True:
+        os.remove(str(trackId) + ".txt")
+    if os.path.isfile(str(trackId) + ".m3u8") == True:
+        os.remove(str(trackId) + ".m3u8")
     if os.path.isfile(str(trackId) + ".m4a") == True:
         if os.path.getsize(str(trackId) + ".m4a") == 0:
             if os.path.isfile(repairFilename(trackName) + ".mp3"):
