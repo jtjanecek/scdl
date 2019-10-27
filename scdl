@@ -11,10 +11,13 @@ import shutil
 import urllib
 import argparse
 import ssl
+import platform
 from mutagen.easyid3 import EasyID3
 from mutagen.mp4 import MP4, MP4Cover
 from mutagen.mp3 import EasyMP3
 from mutagen.id3 import ID3, APIC, TIT2, TALB, TPE1, TPE2, COMM, USLT, TCOM, TCON, TDRC
+from pathlib import Path, PureWindowsPath
+
 
 '''
 We have to use the client_id of another app as Soundcloud is no longer
@@ -116,6 +119,7 @@ def downloadSingleTrack(soundcloudUrl, hqFlag, optionalAlbum):
                 '''
                 m4aFailedFlag = 0
         except:
+            size = 0
             pass
 
     if premiumFlag == 0 or hqFlag == 0 or size == 0:
@@ -256,7 +260,10 @@ def downloadPremium(trackId):
     hacky solution will continue to work. Probably until I cancel
     my SoundCloud Go Plus subscription (or rather trial)
     '''
-    curlPremiumJsonUrl = u"curl \"https://api-v2.soundcloud.com/tracks?ids=" + str(trackId) + u"&client_id=GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy&%5Bobject%20Object%5D=&app_version=1570441876&app_locale=de\" -H \"Sec-Fetch-Mode: cors\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"Content-Type: application/json\" -H \"Accept: application/json, text/javascript, */*; q=0.1\" -H \"Referer: https://soundcloud.com/\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + u".txt"
+    if platform.system() == 'Windows':
+        curlPremiumJsonUrl = str(Path("./bin/curl.exe").absolute()) + u" \"https://api-v2.soundcloud.com/tracks?ids=" + str(trackId) + u"&client_id=GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy&%5Bobject%20Object%5D=&app_version=1570441876&app_locale=de\" -H \"Sec-Fetch-Mode: cors\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"Content-Type: application/json\" -H \"Accept: application/json, text/javascript, */*; q=0.1\" -H \"Referer: https://soundcloud.com/\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + u".txt"
+    else:
+        curlPremiumJsonUrl = u"curl \"https://api-v2.soundcloud.com/tracks?ids=" + str(trackId) + u"&client_id=GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy&%5Bobject%20Object%5D=&app_version=1570441876&app_locale=de\" -H \"Sec-Fetch-Mode: cors\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"Content-Type: application/json\" -H \"Accept: application/json, text/javascript, */*; q=0.1\" -H \"Referer: https://soundcloud.com/\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + u".txt"
     os.system(curlPremiumJsonUrl)
     jsonFilename = str(trackId) + u".txt"
     with open(jsonFilename) as f:
@@ -269,7 +276,10 @@ def downloadPremium(trackId):
     That link to the hls stream leads to yet another link, which
     contains yet another link, which contains...
     '''
-    curlPremiumm3u8 = "curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".txt"
+    if platform.system() == 'Windows':
+        curlPremiumm3u8 = str(Path("./bin/curl.exe").absolute()) + " \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".txt"
+    else:
+        curlPremiumm3u8 = "curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".txt"
     os.system(curlPremiumm3u8)
     m3u8Filename = str(trackId) + ".txt"
     with open(m3u8Filename) as f:
@@ -281,7 +291,10 @@ def downloadPremium(trackId):
     it basically only replicates excactly what a browser would do (go
     look at the network tab in the explore tool and see for yourself)
     '''
-    os.system("curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".m3u8")
+    if platform.system() == 'Windows':
+        os.system(str(Path("./bin/curl.exe").absolute()) + " \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".m3u8")    
+    else:
+        os.system("curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".m3u8")
 
     '''
     Stitch the .m4a together using ffmpeg. Thank God I don't have to do this by hand.
