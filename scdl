@@ -119,8 +119,19 @@ def downloadSingleTrack(soundcloudUrl, hqFlag, optionalAlbum):
                 '''
                 m4aFailedFlag = 0
         except:
-            size = 0
-            pass
+            
+            '''
+            The track is either not publicly available or not
+            available as M4A.
+            '''
+            downloadPremiumPrivate(trackId, soundcloudUrl)
+            size = os.path.getsize(str(trackId) + ".m4a")
+            if size != 0:
+                '''
+                Set flag in case the download failed
+                '''
+                print("m4aFailedFlag = 0")
+                m4aFailedFlag = 0
 
     if premiumFlag == 0 or hqFlag == 0 or size == 0:
         '''
@@ -303,6 +314,50 @@ def downloadPremium(trackId):
     ffmpegCommand = "ffmpeg -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".m4a -loglevel panic"
     os.system(ffmpegCommand)
 
+def downloadPremiumPrivate(trackId, soundcloudUrl):
+    secretToken = soundcloudUrl.split("/")[5]
+    if platform.system() == 'Windows':
+        curlPremiumJsonUrl = str(Path("./bin/curl.exe").absolute()) + u" \"https://api-v2.soundcloud.com/tracks/soundcloud:tracks:" + str(trackId) + '?client_id=1SoBYKkeYLyQsSAiFMTGD0dc0ShJDKUf&secret_token=' + str(secretToken) + "&app_version=1571932339&app_locale=de\" -H \"Connection: keep-alive\" -H \"Accept: application/json, text/javascript, */*; q=0.01\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36\" -H \"DNT: 1\" -H \"Sec-Fetch-Site: same-site\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Accept-Encoding: gzip, deflate, br\" -H \"Accept-Language: de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7\" -k -s --compressed > " + str(trackId) + u".txt"
+    else:
+        curlPremiumJsonUrl = "curl \"https://api-v2.soundcloud.com/tracks/soundcloud:tracks:" + str(trackId) + '?client_id=1SoBYKkeYLyQsSAiFMTGD0dc0ShJDKUf&secret_token=' + str(secretToken) + "&app_version=1571932339&app_locale=de\" -H \"Connection: keep-alive\" -H \"Accept: application/json, text/javascript, */*; q=0.01\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36\" -H \"DNT: 1\" -H \"Sec-Fetch-Site: same-site\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Accept-Encoding: gzip, deflate, br\" -H \"Accept-Language: de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7\" -k -s --compressed > " + str(trackId) + u".txt"
+    os.system(curlPremiumJsonUrl)
+    jsonFilename = str(trackId) + ".txt"
+    with open(jsonFilename) as f:
+        data = json.loads(f.read())
+        url = data['media']['transcodings'][0]['url']
+
+    '''
+    In the words of Dillon Francis' alter ego DJ Hanzel: "van deeper"
+    That link to the hls stream leads to yet another link, which
+    contains yet another link, which contains...
+    '''
+    if platform.system() == 'Windows':
+        curlPremiumm3u8 = str(Path("./bin/curl.exe").absolute()) + " \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".txt"
+    else:
+        curlPremiumm3u8 = "curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".txt"
+    os.system(curlPremiumm3u8)
+    m3u8Filename = str(trackId) + ".txt"
+    with open(m3u8Filename) as f:
+        data = json.loads(f.read())
+        url = data['url']
+
+    '''
+    Yet another really hacky solution, gets the .m3u8 file using curl,
+    it basically only replicates excactly what a browser would do (go
+    look at the network tab in the explore tool and see for yourself)
+    '''
+    if platform.system() == 'Windows':
+        os.system(str(Path("./bin/curl.exe").absolute()) + " \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".m3u8")    
+    else:
+        os.system("curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".m3u8")
+
+    '''
+    Stitch the .m4a together using ffmpeg. Thank God I don't have to do this by hand.
+    By the way, ffmpeg hates https so it needs to be whitelisted.
+    '''
+    ffmpegCommand = "ffmpeg -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".m4a -loglevel panic"
+    os.system(ffmpegCommand)
+
 def downloadRegular(trackId):
     '''
     Function for regular 128kbps mp3 files
@@ -319,6 +374,25 @@ def downloadRegular(trackId):
     fileMp3Url = fileMp3Url.decode("utf-8")
     filename = str(trackId) + ".mp3"
     urllib.request.urlretrieve(fileMp3Url, filename)
+
+def downloadRegularPrivate(trackId, soundcloudUrl):
+    print("Not implemented yet.")
+    exit()
+    '''
+    Function for regular 128kbps mp3 files
+    '''
+    #getMp3Url = "https://api.soundcloud.com/i1/tracks/" + str(trackId) + "/streams?client_id=" + clientId + "&app_version=" + appVersion
+    #mp3Url = requests.get(getMp3Url)
+    '''
+    Fix the URL somehow
+    '''
+    #fileMp3Url = mp3Url.content[21:]
+    #urlSplit = fileMp3Url.split(b'"')
+    #fileMp3Url = urlSplit[0]
+    #Python3 turned this into a bytes object for some reason
+    #fileMp3Url = fileMp3Url.decode("utf-8")
+    #filename = str(trackId) + ".mp3"
+    #urllib.request.urlretrieve(fileMp3Url, filename)
 
 def getTags(soundcloudUrl):
     '''
