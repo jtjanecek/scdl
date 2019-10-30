@@ -12,12 +12,8 @@ optional arguments:
 ```
 
 ## Compatibility
-I've only tested this on Linux, but if you can get ffmpeg as well as the various modules installed it should work just fine. Don't blame me though in case anything breaks.
+This script has been tested on Ubuntu 19.10 and Windows 10 (1903).
 
-Note:
-```
-Windows does not ship with a compatible version of curl (W10: 7.55.1 afaik) and needs to be updated (preferably to 7.66.0), because it does not support the --compressed parameter.
-```
 ## Requirements
 
 * Python3.6
@@ -25,9 +21,17 @@ Windows does not ship with a compatible version of curl (W10: 7.55.1 afaik) and 
 * pip3
 
 ## Installation
+Linux:
 ```
 sudo bash install.sh
-scdl
+scdl -p
+```
+Windows:
+```
+Install ffmpeg and add it to PATH
+python -m pip install --user mutage
+python -m pip install --user requests
+python scdl -p
 ```
 
 ## Disclaimer
