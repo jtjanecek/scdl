@@ -105,6 +105,7 @@ def downloadSingleTrack(soundcloudUrl, hqFlag, optionalAlbum):
     if premiumFlag == 1 and hqFlag == 1:
         trackId = getTrackId(soundcloudUrl)
         try:
+            size = 0
             downloadPremium(trackId)
             '''
             A failed m4a download results in an empty file
@@ -130,7 +131,6 @@ def downloadSingleTrack(soundcloudUrl, hqFlag, optionalAlbum):
                 '''
                 Set flag in case the download failed
                 '''
-                print("m4aFailedFlag = 0")
                 m4aFailedFlag = 0
 
     if premiumFlag == 0 or hqFlag == 0 or size == 0:
