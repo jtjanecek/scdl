@@ -29,7 +29,7 @@ scdl -p
 Windows:
 ```
 Install ffmpeg and add it to PATH
-python -m pip install --user mutage
+python -m pip install --user mutagen
 python -m pip install --user requests
 python scdl -p
 ```
