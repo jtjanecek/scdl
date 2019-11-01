@@ -247,7 +247,7 @@ def changeDirectory(folderName):
     if "/" in folderName:
         folderName.replace("/","-")
     if not os.path.exists(folderName):
-        os.makedirs(folderName)
+        os.mkdir(folderName)
         os.chdir(folderName)
     else:
         os.chdir(folderName)
