@@ -271,13 +271,18 @@ def getTrackId(soundcloudUrl):
     '''
     Self-explanatory.
     '''
-    resolveUrl = "https://api.soundcloud.com/resolve.json?url="
-    url = str(resolveUrl) + str(soundcloudUrl) + str("&client_id=") + str(clientId)
-    s = requests.get(url)
-    s = s.content
-    trackId = json.loads(s)
-    trackId = trackId["id"]
-    return trackId
+    while True:
+        try:
+            resolveUrl = "https://api.soundcloud.com/resolve.json?url="
+            url = str(resolveUrl) + str(soundcloudUrl) + str("&client_id=") + str(clientId)
+            s = requests.get(url)
+            s = s.content
+            trackId = json.loads(s)
+            trackId = trackId["id"]
+            return trackId
+        except JSONDecodeError:
+            continue
+        break
 
 def downloadPremium(trackId):
     '''
