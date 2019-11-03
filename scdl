@@ -5,6 +5,7 @@ import re
 import ssl
 import sys
 import json
+import time
 import shutil
 import urllib
 import mutagen
@@ -280,7 +281,8 @@ def getTrackId(soundcloudUrl):
             trackId = json.loads(s)
             trackId = trackId["id"]
             return trackId
-        except JSONDecodeError:
+        except:
+            time.sleep(2)
             continue
         break
 
