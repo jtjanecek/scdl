@@ -32,7 +32,7 @@ clientId = "FweeGBOOEOYJWLJN3oEyToGLKhmSz0I7"
 appVersion = "1520423007"
 ssl._create_default_https_context = ssl._create_unverified_context
 if platform.system() == 'Windows':
-    pathToCurlWindows = str(Path("./bin/curl.exe").absolute())
+    pathToCurlWindows = Path.cwd() / 'bin' / 'curl.exe'
 
 def main():
     parseStuff()
