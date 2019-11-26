@@ -388,8 +388,7 @@ def downloadRegular(trackId, soundcloudUrl):
     regularPrivateUrl = json.loads(regularPrivateUrl)
     privateMp3Url = regularPrivateUrl["media"]["transcodings"][0]["url"]
     privateMp3Url = privateMp3Url.replace("https://api-mobi.soundcloud.com","https://api-v2.soundcloud.com")
-    privateMp3Url = privateMp3Url + "&client_id=" + clientId
-    privateMp3Url = requests.get(privateMp3Url)
+    privateMp3Url = requests.get(privateMp3Url + "?client_id=" + clientId)
     privateMp3Url = privateMp3Url.content
     privateMp3UrlJson = json.loads(privateMp3Url)
     privateMp3Url = privateMp3UrlJson["url"]
@@ -406,8 +405,7 @@ def downloadRegularPrivate(trackId, soundcloudUrl):
     regularPrivateUrl = json.loads(regularPrivateUrl)
     privateMp3Url = regularPrivateUrl["media"]["transcodings"][0]["url"]
     privateMp3Url = privateMp3Url.replace("https://api-mobi.soundcloud.com","https://api-v2.soundcloud.com")
-    privateMp3Url = privateMp3Url + "&client_id=" + clientId
-    privateMp3Url = requests.get(privateMp3Url)
+    privateMp3Url = requests.get(privateMp3Url + "?client_id=" + clientId)
     privateMp3Url = privateMp3Url.content
     privateMp3UrlJson = json.loads(privateMp3Url)
     privateMp3Url = privateMp3UrlJson["url"]
@@ -416,22 +414,6 @@ def downloadRegularPrivate(trackId, soundcloudUrl):
 
     ffmpegCommand = "ffmpeg -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".mp3 -loglevel panic"
     os.system(ffmpegCommand)
-
-    '''
-    Function for regular 128kbps mp3 files
-    '''
-    #getMp3Url = "https://api.soundcloud.com/i1/tracks/" + str(trackId) + "/streams?client_id=" + clientId + "&app_version=" + appVersion
-    #mp3Url = requests.get(getMp3Url)
-    '''
-    Fix the URL somehow
-    '''
-    #fileMp3Url = mp3Url.content[21:]
-    #urlSplit = fileMp3Url.split(b'"')
-    #fileMp3Url = urlSplit[0]
-    #Python3 turned this into a bytes object for some reason
-    #fileMp3Url = fileMp3Url.decode("utf-8")
-    #filename = str(trackId) + ".mp3"
-    #urllib.request.urlretrieve(fileMp3Url, filename)
 
 def getTags(soundcloudUrl):
     '''
