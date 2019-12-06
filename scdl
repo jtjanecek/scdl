@@ -431,7 +431,14 @@ def getTags(soundcloudUrl):
             continue
         break
 
-
+    if(metadataFlag == 1):
+        metadataFilename = repairFilename(trackName) + "_" + str(tags["id"]) + "_metadata.json"
+        print("Writing metadata to file: ", metadataFilename)
+        try:
+            with open(metadataFilename, 'w') as json_file:
+                json.dump(tags, json_file, sort_keys=True, indent=4)
+        except:
+            print("!!! An error occured while writing the metadata to a file!")
 
     try:
         print("trackName: {}".format(trackName))
@@ -644,6 +651,12 @@ def parseStuff():
         action="store_true",
         dest="playlistFlag",
         )
+    parser.add_argument(
+        '-m','--metadata',
+        help="Write track metadata to a separate file",
+        action="store_true",
+        dest="metadataArg",
+        )
     args = parser.parse_args()
     if args.premium is True:
         global premiumFlag
@@ -651,6 +664,12 @@ def parseStuff():
         print("Premium flag set!")
     else:
         premiumFlag = 0
+    if args.metadataArg is True:
+        global metadataFlag
+        metadataFlag = 1
+        print("Metadata flag set!")
+    else:
+        metadataFlag = 0
     if args.playlistFlag is True:
         global playlistFlag
         playlistFlag = 1
