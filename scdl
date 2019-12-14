@@ -40,7 +40,8 @@ def main():
     parseStuff()
     soundcloudUrl = input("Please enter a URL: ")
     #If the playlist flag is set just download it as a playlist right away,
-    #otherwise just let the regex recide
+    #otherwise just let the regex decide
+
     if playlistFlag == 1:
         if premiumFlag == 1:
             downloadPlaylist(soundcloudUrl, 1)
@@ -164,7 +165,10 @@ def downloadSingleTrack(soundcloudUrl, hqFlag, optionalAlbum):
     the way the tags are applied is different.
     '''
     trackName, artist, coverFlag = getTags(soundcloudUrl)
-    description = getDescription(soundcloudUrl)
+    if descriptionDisableFlag == 0:
+        description = getDescription(soundcloudUrl)
+    else:
+        description = ""
 
     '''
     File gets renamed differently depending on whether or not it's
@@ -444,7 +448,7 @@ def getTags(soundcloudUrl):
         print("trackName: {}".format(trackName))
     except :
         raise
-
+    
     artist = tags["user"]["username"]
 
     print("artist: {}".format(artist))
@@ -557,7 +561,11 @@ def downloadPlaylist(soundcloudUrl, hqFlag):
     playlistId = getPlaylistId(soundcloudUrl)
     print("Playlist ID: {}".format(playlistId))
     permalinkUrl, trackId, trackName, album, trackCount = getPlaylistTracks(playlistId)
-    description = getPlaylistDescriptions(playlistId)
+    if descriptionDisableFlag == 0:
+        description = getPlaylistDescriptions(playlistId)
+    else:
+        description = ""
+
     changeDirectory(album)
 
     for index in range(trackCount):
@@ -628,7 +636,7 @@ def getPlaylistDescriptions(playlistId):
         except IndexError:
             break
 
-    return description    
+    return description
 
 def parseStuff():
     '''
@@ -657,7 +665,21 @@ def parseStuff():
         action="store_true",
         dest="metadataArg",
         )
+    parser.add_argument(
+        '-dd','--disable-description',
+        help="Disable reading and writing of description ID3 tag / JSON",
+        action="store_true",
+        dest="descriptionFlag")
+
     args = parser.parse_args()
+
+    if args.descriptionFlag is True:
+        global descriptionDisableFlag
+        descriptionDisableFlag = 1
+        print("Description disabled!")
+    else:
+        global descriptionFlag
+        descriptionDisableFlag = 0
     if args.premium is True:
         global premiumFlag
         premiumFlag = 1
