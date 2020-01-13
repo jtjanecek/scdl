@@ -6,14 +6,15 @@ Can also download 256kbps m4a files, not just 128kbps mp3 files! You do **NOT** 
 usage: scdl [-h] [-p] [-pl] [-m]
 
 optional arguments:
-  -h, --help       show this help message and exit
+  -h, --help       Show this help message and exit
   -p, --premium    Use to download 256kbps M4A files
   -pl, --playlist  Download a playlist instead of a single track
   -m, --metadata   Write track metadata to a separate file
+  -dd, --disable-description   Disable reading and writing of description ID3 tag / JSON
 ```
 
 ## Compatibility
-This script has been tested on Ubuntu 19.10 and Windows 10 (1903).
+This script has been tested on Ubuntu 19.10 and Windows 10 (1903). Mac should work too, but the installation procedure needs to be adapted from Linux (brew, ffmpeg, pip etc.)
 
 ## Requirements
 
