@@ -31,7 +31,7 @@ kept breaking so freaking often).
 '''
 
 clientId = "iZIs9mchVcX5lhVRyQGGAYlNPVldzAoX"
-appVersion = "1574432665"
+appVersion = "1575626913"
 lastTrackIndexFilePath = "last_track_index.txt"
 lastTrackIndex = 0
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -427,9 +427,8 @@ def downloadRegularPrivate(trackId, soundcloudUrl):
     regularPrivateUrl = requests.get(resolveRegularPrivateUrl)
     regularPrivateUrl = regularPrivateUrl.content
     regularPrivateUrl = json.loads(regularPrivateUrl)
-    privateMp3Url = regularPrivateUrl["media"]["transcodings"][0]["url"]
-    privateMp3Url = privateMp3Url.replace("https://api-mobi.soundcloud.com","https://api-v2.soundcloud.com")
-    privateMp3Url = requests.get(privateMp3Url + "?client_id=" + clientId)
+    privateMp3Url = regularPrivateUrl["media"]["transcodings"][0]["url"] +  "&client_id=" + clientId
+    privateMp3Url = requests.get(privateMp3Url)
     privateMp3Url = privateMp3Url.content
     privateMp3UrlJson = json.loads(privateMp3Url)
     privateMp3Url = privateMp3UrlJson["url"]
