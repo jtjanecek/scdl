@@ -427,12 +427,20 @@ def downloadRegularPrivate(trackId, soundcloudUrl):
     regularPrivateUrl = requests.get(resolveRegularPrivateUrl)
     regularPrivateUrl = regularPrivateUrl.content
     regularPrivateUrl = json.loads(regularPrivateUrl)
-    privateMp3Url = regularPrivateUrl["media"]["transcodings"][0]["url"] +  "&client_id=" + clientId
-    privateMp3Url = privateMp3Url.replace("https://api-mobi.soundcloud.com","https://api-v2.soundcloud.com")
-    privateMp3Url = requests.get(privateMp3Url)
-    privateMp3Url = privateMp3Url.content
-    privateMp3UrlJson = json.loads(privateMp3Url)
-    privateMp3Url = privateMp3UrlJson["url"]
+    try:
+        privateMp3Url = regularPrivateUrl["media"]["transcodings"][0]["url"]
+        privateMp3Url = privateMp3Url.replace("https://api-mobi.soundcloud.com","https://api-v2.soundcloud.com")
+        privateMp3Url = requests.get(privateMp3Url + "?client_id=" + clientId)
+        privateMp3Url = privateMp3Url.content
+        privateMp3UrlJson = json.loads(privateMp3Url)
+        privateMp3Url = privateMp3UrlJson["url"]
+    except:
+        privateMp3Url = regularPrivateUrl["media"]["transcodings"][0]["url"] +  "&client_id=" + clientId
+        privateMp3Url = privateMp3Url.replace("https://api-mobi.soundcloud.com","https://api-v2.soundcloud.com")
+        privateMp3Url = requests.get(privateMp3Url)
+        privateMp3Url = privateMp3Url.content
+        privateMp3UrlJson = json.loads(privateMp3Url)
+        privateMp3Url = privateMp3UrlJson["url"]
     filename = str(trackId) + ".m3u8"
     urllib.request.urlretrieve(privateMp3Url, filename)
 
