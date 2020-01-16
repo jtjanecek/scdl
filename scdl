@@ -32,6 +32,8 @@ kept breaking so freaking often).
 
 clientId = "iZIs9mchVcX5lhVRyQGGAYlNPVldzAoX"
 appVersion = "1574432665"
+lastTrackIndexFilePath = "last_track_index.txt"
+lastTrackIndex = 0
 ssl._create_default_https_context = ssl._create_unverified_context
 if platform.system() == 'Windows':
     pathToCurlWindows = str(Path("./bin/curl.exe").absolute())
@@ -356,7 +358,7 @@ def downloadPremium(trackId):
     Stitch the .m4a together using ffmpeg. Thank God I don't have to do this by hand.
     By the way, ffmpeg hates https so it needs to be whitelisted.
     '''
-    ffmpegCommand = "ffmpeg -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".m4a -loglevel panic"
+    ffmpegCommand = "ffmpeg -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".m4a -loglevel panic"
     os.system(ffmpegCommand)
 
 def downloadPremiumPrivate(trackId, soundcloudUrl):
@@ -400,7 +402,7 @@ def downloadPremiumPrivate(trackId, soundcloudUrl):
     Stitch the .m4a together using ffmpeg. Thank God I don't have to do this by hand.
     By the way, ffmpeg hates https so it needs to be whitelisted.
     '''
-    ffmpegCommand = "ffmpeg -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".m4a -loglevel panic"
+    ffmpegCommand = "ffmpeg -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".m4a -loglevel panic"
     os.system(ffmpegCommand)
 
 def downloadRegular(trackId, soundcloudUrl):
@@ -417,7 +419,7 @@ def downloadRegular(trackId, soundcloudUrl):
     filename = str(trackId) + ".m3u8"
     urllib.request.urlretrieve(privateMp3Url, filename)
 
-    ffmpegCommand = "ffmpeg -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".mp3 -loglevel panic"
+    ffmpegCommand = "ffmpeg -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".mp3 -loglevel panic"
     os.system(ffmpegCommand)
 
 def downloadRegularPrivate(trackId, soundcloudUrl):
@@ -434,7 +436,7 @@ def downloadRegularPrivate(trackId, soundcloudUrl):
     filename = str(trackId) + ".m3u8"
     urllib.request.urlretrieve(privateMp3Url, filename)
 
-    ffmpegCommand = "ffmpeg -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".mp3 -loglevel panic"
+    ffmpegCommand = "ffmpeg -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".mp3 -loglevel panic"
     os.system(ffmpegCommand)
 
 def getTags(soundcloudUrl):
@@ -585,9 +587,20 @@ def downloadPlaylist(soundcloudUrl, hqFlag):
         description = ""
 
     changeDirectory(album)
-
-    for index in range(trackCount):
+    
+    if not os.path.exists(lastTrackIndexFilePath):
+        lastTrackIndexFile = open(lastTrackIndexFilePath, 'w+')
+        lastTrackIndex = 0
+        lastTrackIndexFile.write(str(lastTrackIndex))
+    else:
+        lastTrackIndexFile = open(lastTrackIndexFilePath, 'r')
+        lastTrackIndex = int(lastTrackIndexFile.read())
+    
+    for index in range(lastTrackIndex, trackCount):
         downloadSingleTrack(permalinkUrl[index], trackName[index], hqFlag, album)
+        lastTrackIndexFile = open(lastTrackIndexFilePath, 'w')
+        lastTrackIndexFile.write(str(index))
+        lastTrackIndexFile.close()
 
 def getPlaylistId(soundcloudUrl):
     '''
