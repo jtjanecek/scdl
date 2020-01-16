@@ -165,7 +165,7 @@ def downloadSingleTrack(soundcloudUrl, trackTitle, hqFlag, optionalAlbum):
         trackId = getTrackId(soundcloudUrl)
         if not os.path.exists(str(trackTitle) + '.mp3') and not os.path.exists(str(repairFilename(trackTitle)) + '.mp3'):
             try:
-                downloadRegular(trackId)
+                downloadRegular(trackId, soundcloudUrl)
             except:
                 downloadRegularPrivate(trackId, soundcloudUrl)
         else:
