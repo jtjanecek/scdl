@@ -3,7 +3,7 @@ You run it, give it a track link or a playlist link and it gets downloaded. It's
 Can also download 256kbps m4a files, not just 128kbps mp3 files! You do **NOT** need to own a premium account to use this tool.
 ## Usage
 ```
-usage: scdl [-h] [-p] [-pl] [-m]
+usage: scdl [-h] [-p] [-pl] [-m] [-dd]
 
 optional arguments:
   -h, --help       Show this help message and exit
