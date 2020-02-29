@@ -489,8 +489,16 @@ def getTags(soundcloudUrl):
     if cover != None:
         coverFlag = 1
         cover = cover.replace("large", "t500x500")
-        urllib.request.urlretrieve(cover, "cover.jpg")
-
+        try:
+            urllib.request.urlretrieve(cover, "cover.jpg")
+        except:
+            try:
+                coverFlag = 1
+                cover = tags["user"]["avatar_url"]
+                cover = cover.replace("large", "t500x500")
+                urllib.request.urlretrieve(cover, "cover.jpg")
+            except urllib.error.HTTPError:
+                coverFlag = 0
     else:
         '''
         some tracks don't have any kind of cover art, the
@@ -501,8 +509,6 @@ def getTags(soundcloudUrl):
             coverFlag = 1
             cover = tags["user"]["avatar_url"]
             cover = cover.replace("large", "t500x500")
-            #cover_request = requests.get(cover, stream=True)
-            #cover_file = cover_request.raw
             urllib.request.urlretrieve(cover, "cover.jpg")
         except urllib.error.HTTPError:
             coverFlag = 0
@@ -708,7 +714,8 @@ def parseStuff():
         '-dd','--disable-description',
         help="Disable reading and writing of description ID3 tag / JSON",
         action="store_true",
-        dest="descriptionFlag")
+        dest="descriptionFlag"
+        )
 
     args = parser.parse_args()
 
