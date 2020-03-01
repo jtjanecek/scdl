@@ -358,7 +358,7 @@ def downloadPremium(trackId):
     Stitch the .m4a together using ffmpeg. Thank God I don't have to do this by hand.
     By the way, ffmpeg hates https so it needs to be whitelisted.
     '''
-    ffmpegCommand = "ffmpeg -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".m4a -loglevel panic"
+    ffmpegCommand = ffmpegPath + " -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".m4a -loglevel panic"
     os.system(ffmpegCommand)
 
 def downloadPremiumPrivate(trackId, soundcloudUrl):
@@ -402,7 +402,7 @@ def downloadPremiumPrivate(trackId, soundcloudUrl):
     Stitch the .m4a together using ffmpeg. Thank God I don't have to do this by hand.
     By the way, ffmpeg hates https so it needs to be whitelisted.
     '''
-    ffmpegCommand = "ffmpeg -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".m4a -loglevel panic"
+    ffmpegCommand = ffmpegPath + " -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".m4a -loglevel panic"
     os.system(ffmpegCommand)
 
 def downloadRegular(trackId, soundcloudUrl):
@@ -419,7 +419,7 @@ def downloadRegular(trackId, soundcloudUrl):
     filename = str(trackId) + ".m3u8"
     urllib.request.urlretrieve(privateMp3Url, filename)
 
-    ffmpegCommand = "ffmpeg -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".mp3 -loglevel panic"
+    ffmpegCommand = ffmpegPath + " -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".mp3 -loglevel panic"
     os.system(ffmpegCommand)
 
 def downloadRegularPrivate(trackId, soundcloudUrl):
@@ -444,7 +444,7 @@ def downloadRegularPrivate(trackId, soundcloudUrl):
     filename = str(trackId) + ".m3u8"
     urllib.request.urlretrieve(privateMp3Url, filename)
 
-    ffmpegCommand = "ffmpeg -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".mp3 -loglevel panic"
+    ffmpegCommand = ffmpegPath + " -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".mp3 -loglevel panic"
     os.system(ffmpegCommand)
 
 def getTags(soundcloudUrl):
@@ -716,6 +716,12 @@ def parseStuff():
         action="store_true",
         dest="descriptionFlag"
         )
+    parser.add_argument(
+        '-f','--ffmpeg-location',
+        help="Path to ffmpeg. Can be the containing directory or ffmpeg executable itself",
+        action="store",
+        dest="ffmpegPath"
+    )
 
     args = parser.parse_args()
 
@@ -744,6 +750,17 @@ def parseStuff():
         print("Downloading a playlist!")
     if args.playlistFlag is False:
         playlistFlag = 0
+    global ffmpegPath
+    if args.ffmpegPath:
+        ffmpegPath = os.path.abspath(args.ffmpegPath)
+        if os.path.exists(ffmpegPath):
+            if os.path.isdir(ffmpegPath):
+                ffmpegPath = os.path.join(ffmpegPath, "ffmpeg")
+        else:
+            print("ffmpeg-location is incorrect - path \"" + ffmpegPath + "\" does not exist")
+            exit()
+    else:
+        ffmpegPath = "ffmpeg"
 
 if __name__ == '__main__':
     main()
