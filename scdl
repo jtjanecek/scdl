@@ -36,6 +36,7 @@ premiumClientId = "GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy"
 appVersion = "1575626913"
 lastTrackIndexFilePath = "last_track_index.txt"
 lastTrackIndex = 0
+resumeDownloadFlag = False
 ssl._create_default_https_context = ssl._create_unverified_context
 if platform.system() == 'Windows':
     pathToCurlWindows = str(Path("./bin/curl.exe").absolute())
@@ -47,10 +48,15 @@ def main():
     #otherwise just let the regex decide
 
     if playlistFlag == 1:
-        if premiumFlag == 1:
-            downloadPlaylist(soundcloudUrl, 1)
-        if premiumFlag == 0:
-            downloadPlaylist(soundcloudUrl, 0)
+        try:
+            if premiumFlag == 1:
+                album = downloadPlaylist(soundcloudUrl, 1)
+            if premiumFlag == 0:
+                album = downloadPlaylist(soundcloudUrl, 0)
+        except:
+            print("An Error occured while downloading the playlist!")
+            sys.exit(1)
+
 
     if playlistFlag == 0:
         linkType, soundcloudUrl = linkDetection(soundcloudUrl)
@@ -104,7 +110,8 @@ def downloadSingleTrack(soundcloudUrl, trackTitle, hqFlag, optionalAlbum):
     name will be passed to the function as optionalAlbum, otherwise 
     it is 0 and gets replaced by simple string
     '''
-    alreadyDownloaded = False
+    if resumeDownloadFlag == True:
+        alreadyDownloaded = False
     
     if optionalAlbum != 0:
         album = optionalAlbum
@@ -113,11 +120,55 @@ def downloadSingleTrack(soundcloudUrl, trackTitle, hqFlag, optionalAlbum):
     '''
     m4a premium download, only happens when both flags are set
     '''
+
     if premiumFlag == 1 and hqFlag == 1:
         trackId = getTrackId(soundcloudUrl)
         size = 0
         m4aFailedFlag = 0
-        if not os.path.exists(str(trackTitle) + '.m4a') and not os.path.exists(str(repairFilename(trackTitle)) + '.m4a'):
+        if resumeDownloadFlag == True:
+            if not os.path.exists(str(trackTitle) + '.m4a') and not os.path.exists(str(repairFilename(trackTitle)) + '.m4a'):
+                try:
+                    downloadPremium(trackId)
+                    '''
+                    A failed m4a download results in an empty file
+                    due to the lack of audio streams, so we can just
+                    check for the filesize to see if the download was
+                    successful or not :)
+                    '''
+                    size = os.path.getsize(str(trackId) + ".m4a")
+                    if size != 0:
+                        '''
+                        Set flag in case the download failed
+                        '''
+                        m4aFailedFlag = 0
+                    else:
+                        m4aFailedFlag = 1
+                except:
+                
+                    '''
+                    The track is either not publicly available or not
+                    available as M4A.
+                    '''
+                    try:
+                        downloadPremiumPrivate(trackId, soundcloudUrl)
+                    except:
+                        m4aFailedFlag = 1
+                        try:
+                            size = os.path.getsize(str(trackId) + ".m4a")
+                        except:
+                            size = 0
+                            if size != 0:
+                                '''
+                                Set flag in case the download failed
+                                '''
+                                m4aFailedFlag = 0
+                            else:
+                                m4aFailedFlag = 1
+            else:
+                size = 1
+                alreadyDownloaded = True
+                print(str(repairFilename(trackTitle)) + " Already Exists")              
+        else:
             try:
                 downloadPremium(trackId)
                 '''
@@ -155,10 +206,6 @@ def downloadSingleTrack(soundcloudUrl, trackTitle, hqFlag, optionalAlbum):
                             m4aFailedFlag = 0
                         else:
                             m4aFailedFlag = 1
-        else:
-            size = 1
-            alreadyDownloaded = True
-            print(str(repairFilename(trackTitle)) + " Already Exists")                   
 
     if premiumFlag == 0 or hqFlag == 0 or size == 0:
         '''
@@ -181,7 +228,8 @@ def downloadSingleTrack(soundcloudUrl, trackTitle, hqFlag, optionalAlbum):
     The tagging procedure is similar for both file types, only
     the way the tags are applied is different.
     '''
-                
+    if resumeDownloadFlag == False:
+        alreadyDownloaded = False
     if not alreadyDownloaded:           
         trackName, artist, coverFlag = getTags(soundcloudUrl)
         if descriptionDisableFlag == 0:
@@ -195,20 +243,20 @@ def downloadSingleTrack(soundcloudUrl, trackTitle, hqFlag, optionalAlbum):
         '''
         
         if m4aFailedFlag == 1 or hqFlag == 0:
-            renameFile(trackId, trackName, 0)
+            finishedDownloadFilename = renameFile(trackId, trackName, 0)
         else:
-            renameFile(trackId, trackName, 1)
+            finishedDownloadFilename = renameFile(trackId, trackName, 1)
      
         if premiumFlag ==  1 and hqFlag == 1 and m4aFailedFlag == 0:
             '''
             m4a
             '''
-            addTags(trackName, artist, album, coverFlag, description, 1)
+            addTags(finishedDownloadFilename, trackName, artist, album, coverFlag, description, 1)
         else:
             '''
             mp3
             '''
-            addTags(trackName, artist, album, coverFlag, description, 0)
+            addTags(finishedDownloadFilename, trackName, artist, album, coverFlag, description, 0)
 
     
     cleanUp(trackId, repairFilename(trackTitle))
@@ -253,17 +301,31 @@ def renameFile(trackId, trackName, premiumFlag):
     '''
     trackName = repairFilename(trackName)
     #We're dealing with a .m4a file here
-    if premiumFlag == 1:    
-        oldFilename = str(trackId) + '.m4a'
-        newFilename = str(trackName) + '.m4a'
+    if premiumFlag == 1:  
+        fileExtension = ".m4a"  
+        oldFilename = str(trackId) + fileExtension
+        newFilename = str(trackName) + fileExtension
     #We're dealing with a .mp3 file here
     if premiumFlag == 0:
-        oldFilename = str(trackId) + '.mp3'
-        newFilename = str(trackName) + '.mp3'
+        fileExtension = ".mp3"
+        oldFilename = str(trackId) + fileExtension
+        newFilename = str(trackName) + fileExtension
         
-    if not os.path.exists(newFilename):    
+    newFixedFilename = ""
+    if not os.path.exists(newFilename):
         os.rename(oldFilename, newFilename)
-
+    else:
+        ii = 1
+        while True:
+            newFixedFilename = str(trackName) + "_" + str(ii) + fileExtension
+            if not os.path.exists(newFixedFilename):
+                print("File with same filename exists, renaming current file to {}".format(newFixedFilename))
+                os.rename(oldFilename, newFixedFilename)
+                break
+            ii += 1
+    if newFixedFilename != "":
+        newFilename = newFixedFilename
+    return newFilename
 
 def cleanUp(trackId, trackName):
     '''
@@ -281,7 +343,6 @@ def cleanUp(trackId, trackName):
     if os.path.isfile(str(trackId) + ".mp3") == True:
         os.remove(str(trackId) + ".mp3")        
                 
-
 def changeDirectory(folderName):
     '''
     makes directory with the name of the album passed to it, creates it if needed
@@ -532,7 +593,7 @@ def getDescription(soundcloudUrl):
     description = tags["description"]
     return description
 
-def addTags(trackName, artist, album, coverFlag, description, m4aFlag):
+def addTags(filename, trackName, artist, album, coverFlag, description, m4aFlag):
     '''
     Adds tags to the M4A file. 
     All of these are supported by iTunes and should
@@ -541,9 +602,9 @@ def addTags(trackName, artist, album, coverFlag, description, m4aFlag):
     album name will be the name of the playlist instead of
     "SoundCloud"
     '''
+    repairedFilename = filename
     if m4aFlag == 1:
-        repairedFilename = repairFilename(trackName)
-        tags = MP4(repairedFilename + ".m4a").tags
+        tags = MP4(repairedFilename).tags
         if description != None:
             tags["desc"] = description
         tags["\xa9nam"] = trackName
@@ -557,13 +618,12 @@ def addTags(trackName, artist, album, coverFlag, description, m4aFlag):
             tags["covr"] = [
                 MP4Cover(f.read(), imageformat=MP4Cover.FORMAT_JPEG)
             ]
-        tags.save(repairedFilename + ".m4a")
+        tags.save(repairedFilename)
 
 
 
     if m4aFlag == 0:
-        repairedFilename = repairFilename(trackName)
-        audio = EasyMP3(repairedFilename + ".mp3")
+        audio = EasyMP3(repairedFilename)
         audio['title'] = trackName
         audio['artist'] = artist
 
@@ -574,7 +634,7 @@ def addTags(trackName, artist, album, coverFlag, description, m4aFlag):
         audio.save(v2_version=3)
 
         if coverFlag != 0:
-            audio = ID3(str(repairedFilename) + u".mp3")
+            audio = ID3(repairedFilename)
             if description != None:
                 audio.add(
                 USLT(
@@ -620,6 +680,8 @@ def downloadPlaylist(soundcloudUrl, hqFlag):
         lastTrackIndexFile = open(lastTrackIndexFilePath, 'w')
         lastTrackIndexFile.write(str(index))
         lastTrackIndexFile.close()
+    print("Download of playlist finished, deleting last_track_index.txt ...")
+    os.remove("last_track_index.txt")
 
 def getPlaylistId(soundcloudUrl):
     '''
@@ -727,6 +789,12 @@ def parseStuff():
         action="store",
         dest="ffmpegPath"
     )
+    parser.add_argument(
+        '-r', '--resume',
+        help="Resume download of playlist",
+        action="store_true",
+        dest="resumeDownloadFlag"
+    )
 
     args = parser.parse_args()
 
@@ -766,6 +834,9 @@ def parseStuff():
             exit()
     else:
         ffmpegPath = "ffmpeg"
+    if args.resumeDownloadFlag is True:
+        global resumeDownloadFlag
+        resumeDownloadFlag = args.resumeDownloadFlag
 
 if __name__ == '__main__':
     main()

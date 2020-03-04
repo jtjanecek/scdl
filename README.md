@@ -12,6 +12,7 @@ optional arguments:
   -m, --metadata   Write track metadata to a separate file
   -dd, --disable-description   Disable reading and writing of description ID3 tag / JSON
   -f, --ffmpeg-location   Path to ffmpeg. Can be the containing directory or ffmpeg executable itself
+  -r, --resume     Resume download of playlist
 ```
 
 ## Compatibility
