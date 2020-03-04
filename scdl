@@ -43,6 +43,7 @@ if platform.system() == 'Windows':
 
 def main():
     parseStuff()
+
     soundcloudUrl = input("Please enter a URL: ")
     #If the playlist flag is set just download it as a playlist right away,
     #otherwise just let the regex decide
@@ -798,31 +799,30 @@ def parseStuff():
 
     args = parser.parse_args()
 
+    global descriptionDisableFlag
     if args.descriptionFlag is True:
-        global descriptionDisableFlag
-        descriptionDisableFlag = 1
-        print("Description disabled!")
+        descriptionDisableFlag = True
     else:
-        global descriptionFlag
-        descriptionDisableFlag = 0
+        descriptionDisableFlag = False
+
+    global premiumFlag
     if args.premium is True:
-        global premiumFlag
-        premiumFlag = 1
-        print("Premium flag set!")
+        premiumFlag = True
     else:
-        premiumFlag = 0
+        premiumFlag = False
+
+    global metadataFlag
     if args.metadataArg is True:
-        global metadataFlag
-        metadataFlag = 1
-        print("Metadata flag set!")
+        metadataFlag = True
     else:
-        metadataFlag = 0
+        metadataFlag = False
+
+    global playlistFlag
     if args.playlistFlag is True:
-        global playlistFlag
-        playlistFlag = 1
-        print("Downloading a playlist!")
+        playlistFlag = True
     if args.playlistFlag is False:
-        playlistFlag = 0
+        playlistFlag = False
+
     global ffmpegPath
     if args.ffmpegPath:
         ffmpegPath = os.path.abspath(args.ffmpegPath)
@@ -834,9 +834,12 @@ def parseStuff():
             exit()
     else:
         ffmpegPath = "ffmpeg"
+
+    global resumeDownloadFlag
     if args.resumeDownloadFlag is True:
-        global resumeDownloadFlag
-        resumeDownloadFlag = args.resumeDownloadFlag
+        resumeDownloadFlag = True
+    else:
+        resumeDownloadFlag = False
 
 if __name__ == '__main__':
     main()
