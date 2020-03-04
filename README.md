@@ -13,6 +13,8 @@ optional arguments:
   -dd, --disable-description   Disable reading and writing of description ID3 tag / JSON
   -f, --ffmpeg-location   Path to ffmpeg. Can be the containing directory or ffmpeg executable itself
   -r, --resume     Resume download of playlist
+  --update-linux   Updates (and installs) scdl to the newest version
+  --update-windows Updates scdl to the newest version (within the current folder)
 ```
 
 ## Compatibility

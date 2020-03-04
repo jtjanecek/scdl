@@ -6,10 +6,12 @@ import ssl
 import sys
 import json
 import time
+import stat
 import shutil
 import urllib
 import codecs
 import mutagen
+import zipfile
 import argparse
 import requests
 import platform
@@ -44,6 +46,22 @@ if platform.system() == 'Windows':
 def main():
     parseStuff()
 
+    if updateLinuxFlag == True:
+        print("Updating for Linux!")
+        try:
+            updateLinux()
+        except:
+            print("An error occured while updating!")            
+        return
+
+    if updateWindowsFlag == True:
+        print("Updating for Windows!")
+        try:
+            updateWindows()
+        except:
+            print("An error occured while updating!")
+        return
+
     soundcloudUrl = input("Please enter a URL: ")
     #If the playlist flag is set just download it as a playlist right away,
     #otherwise just let the regex decide
@@ -70,6 +88,81 @@ def main():
         if linkType == 2 and premiumFlag == 0:
             downloadPlaylist(soundcloudUrl, 0)
     print("Done!")
+
+def updateLinux():
+    if platform.system() != "Linux":
+        print("You're not running Linux!")
+        return
+    if os.geteuid() != 0:
+        print("This needs to be run as root!")
+        return
+    print("Getting latest version from Github...")
+    response  = requests.get("https://github.com/mrwnwttk/scdl/archive/master.zip")
+    urllib.request.urlretrieve(response.url, "scdl-latest.zip")
+    with zipfile.ZipFile("scdl-latest.zip", "r") as zip:
+        for file in zip.infolist():
+            file.filename = os.path.basename(file.filename)
+            if file.filename == "scdl" or file.filename == "install.sh":
+                    zip.extract(file, os.getcwd())
+    os.remove("scdl-latest.zip")
+    os.system("./install.sh")
+    os.remove("scdl")
+    os.remove("install.sh")
+    print("Updated!")
+
+def updateWindows():
+    print("Getting latest version from Github...")
+    response = requests.get("https://github.com/mrwnwttk/scdl/archive/master.zip")
+    urllib.request.urlretrieve(response.url, "scdl-latest.zip")
+    print("Cleaning up directory...")
+    files_to_delete = [
+    'install.sh',
+    '.gitignore',
+    'scdl',
+    'README.md',
+    'bin/curl.exe'
+    ]
+
+    for file in files_to_delete:
+        try:
+            os.remove(file)
+        except:
+            pass
+    shutil.rmtree("bin")
+
+    try:
+        shutil.move(".git", "git")
+    except:
+        pass
+    try:
+        shutil.rmtree('git', ignore_errors=True)
+    except:
+        pass
+
+    with zipfile.ZipFile("scdl-latest.zip", "r") as zip:
+        for file in zip.infolist():
+            if file.filename[-1] == '/' or file.filename[0] == '.':
+                continue
+            file.filename = os.path.basename(file.filename)
+            if file.filename == "scdl":
+                zip.extract(file, os.getcwd())
+            if file.filename == "curl.exe":
+                zip.extract(file, os.getcwd())
+            if file.filename == "README.md":
+                zip.extract(file, os.getcwd())
+
+    os.remove("scdl-latest.zip")
+    try:
+        shutil.rmtree("git", onerror=remove_readonly)
+    except:
+        pass
+    os.mkdir("bin")
+    os.rename("curl.exe", "bin/curl.exe")
+    print("Updated!")
+
+def remove_readonly(func, path, _):
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
 
 def linkDetection(soundcloudUrl):
     '''
@@ -796,8 +889,32 @@ def parseStuff():
         action="store_true",
         dest="resumeDownloadFlag"
     )
+    parser.add_argument(
+        '--update-linux',
+        help="Updates (and installs) scdl to the newest version",
+        action="store_true",
+        dest="updateLinuxFlag"
+    )
+    parser.add_argument(
+        '--update-windows',
+        help="Updates scdl to the newest version (within the current folder)",
+        action="store_true",
+        dest="updateWindowsFlag"
+    )
 
     args = parser.parse_args()
+
+    global updateLinuxFlag
+    if args.updateLinuxFlag is True:
+        updateLinuxFlag = True
+    else:
+        updateLinuxFlag = False
+
+    global updateWindowsFlag
+    if args.updateWindowsFlag is True:
+        updateWindowsFlag = True
+    else:
+        updateWindowsFlag = False
 
     global descriptionDisableFlag
     if args.descriptionFlag is True:
