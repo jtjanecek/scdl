@@ -26,7 +26,7 @@ This script has been tested on Ubuntu 19.10 and Windows 10 (1903). Mac should wo
 ## Installation
 Linux:
 ```
-sudo bash install.sh
+sudo ./install.sh
 scdl -p
 ```
 Windows:
