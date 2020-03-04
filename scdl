@@ -8,6 +8,7 @@ import json
 import time
 import shutil
 import urllib
+import codecs
 import mutagen
 import argparse
 import requests
@@ -31,6 +32,7 @@ kept breaking so freaking often).
 '''
 
 clientId = "iZIs9mchVcX5lhVRyQGGAYlNPVldzAoX"
+premiumClientId = "GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy"
 appVersion = "1575626913"
 lastTrackIndexFilePath = "last_track_index.txt"
 lastTrackIndex = 0
@@ -319,15 +321,17 @@ def downloadPremium(trackId):
     my SoundCloud Go Plus subscription (or rather trial)
     '''
     if platform.system() == 'Windows':
-        curlPremiumJsonUrl = pathToCurlWindows + u" \"https://api-v2.soundcloud.com/tracks?ids=" + str(trackId) + u"&client_id=GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy&%5Bobject%20Object%5D=&app_version=1570441876&app_locale=de\" -H \"Sec-Fetch-Mode: cors\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"Content-Type: application/json\" -H \"Accept: application/json, text/javascript, */*; q=0.1\" -H \"Referer: https://soundcloud.com/\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + u".txt"
+        curlPremiumJsonUrl = pathToCurlWindows + u" \"https://api-v2.soundcloud.com/tracks?ids=" + str(trackId) + u"&client_id=" + str(premiumClientId) + "&%5Bobject%20Object%5D=&app_version=1570441876&app_locale=de\" -H \"Sec-Fetch-Mode: cors\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"Content-Type: application/json\" -H \"Accept: application/json, text/javascript, */*; q=0.1\" -H \"Referer: https://soundcloud.com/\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + u".txt"
     else:
-        curlPremiumJsonUrl = u"curl \"https://api-v2.soundcloud.com/tracks?ids=" + str(trackId) + u"&client_id=GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy&%5Bobject%20Object%5D=&app_version=1570441876&app_locale=de\" -H \"Sec-Fetch-Mode: cors\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"Content-Type: application/json\" -H \"Accept: application/json, text/javascript, */*; q=0.1\" -H \"Referer: https://soundcloud.com/\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + u".txt"
+        curlPremiumJsonUrl = u"curl \"https://api-v2.soundcloud.com/tracks?ids=" + str(trackId) + u"&client_id=" + str(premiumClientId) + "&%5Bobject%20Object%5D=&app_version=1570441876&app_locale=de\" -H \"Sec-Fetch-Mode: cors\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"Content-Type: application/json\" -H \"Accept: application/json, text/javascript, */*; q=0.1\" -H \"Referer: https://soundcloud.com/\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + u".txt"
+    
     os.system(curlPremiumJsonUrl)
+    
     jsonFilename = str(trackId) + u".txt"
-    with open(jsonFilename) as f:
-        data = json.loads(f.read())
-        url = data[0]['media']['transcodings'][0]['url']
-    url = url + "?client_id=GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy"
+    
+    file = codecs.open(jsonFilename,'r', encoding='UTF-8')
+    data = json.loads(file.readlines()[0])
+    url = data[0]['media']['transcodings'][0]['url']
 
     '''
     In the words of Dillon Francis' alter ego DJ Hanzel: "van deeper"
@@ -369,9 +373,10 @@ def downloadPremiumPrivate(trackId, soundcloudUrl):
         curlPremiumJsonUrl = "curl \"https://api-v2.soundcloud.com/tracks/soundcloud:tracks:" + str(trackId) + '?client_id=1SoBYKkeYLyQsSAiFMTGD0dc0ShJDKUf&secret_token=' + str(secretToken) + "&app_version=1571932339&app_locale=de\" -H \"Connection: keep-alive\" -H \"Accept: application/json, text/javascript, */*; q=0.01\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36\" -H \"DNT: 1\" -H \"Sec-Fetch-Site: same-site\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Accept-Encoding: gzip, deflate, br\" -H \"Accept-Language: de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7\" -k -s --compressed > " + str(trackId) + u".txt"
     os.system(curlPremiumJsonUrl)
     jsonFilename = str(trackId) + ".txt"
-    with open(jsonFilename) as f:
-        data = json.loads(f.read())
-        url = data['media']['transcodings'][0]['url']
+
+    file = codecs.open(jsonFilename,'r', encoding='UTF-8')
+    data = json.loads(file.readlines()[0])
+    url = data[0]['media']['transcodings'][0]['url']
 
     '''
     In the words of Dillon Francis' alter ego DJ Hanzel: "van deeper"
