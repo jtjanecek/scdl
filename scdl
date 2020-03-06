@@ -725,11 +725,7 @@ def downloadPremiumPrivate(trackId, soundcloudUrl):
     with open(str(trackId) + ".m3u8", "w") as file:
         file.write(r.text)
 
-    '''
-    Stitch the .m4a together using ffmpeg. Thank God I don't have to do this by hand.
-    By the way, ffmpeg hates https so it needs to be whitelisted.
-    '''
-    os.system("{} -y -protocol_whitelist file,http,https,tcp,tls -i {}.m3u8 -c copy {}.m4a -loglevel panic".format(ffmpegPath, trackId, trackId))
+    downloadM3U8(trackId)
 
 def downloadRegular(trackId, soundcloudUrl):
     resolveRegularPrivateUrl = "https://api-mobi.soundcloud.com/resolve?permalink_url=" + soundcloudUrl + "&client_id=" + clientId + "&format=json&app_version=" + appVersion
