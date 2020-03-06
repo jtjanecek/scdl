@@ -516,6 +516,7 @@ def downloadPremium(trackId):
         except Exception as e:
             print(e)
         print("Status Code: {}".format(r.status_code))
+        log_debug("Status Code: {}".format(r.status_code))
         if r.status_code == 200:
             break
         else:
@@ -548,6 +549,7 @@ def downloadPremium(trackId):
         except Exception as e:
             print(e)
         print("Status Code: {}".format(r.status_code))
+        log_debug("Status Code: {}".format(r.status_code))
         if r.status_code == 200:
             break
         else:
@@ -580,6 +582,7 @@ def downloadPremium(trackId):
         except Exception as e:
             print(e)
         print("Status Code: {}".format(r.status_code))
+        log_debug("Status Code: {}".format(r.status_code))
         if r.status_code == 200:
             break
         else:
@@ -721,6 +724,7 @@ def downloadPremiumPrivate(trackId, soundcloudUrl):
         except Exception as e:
             print(e)
         print("Status Code: {}".format(r.status_code))
+        log_debug("Status Code: {}".format(r.status_code))
         if r.status_code == 200:
             break
         else:
