@@ -35,7 +35,7 @@ kept breaking so freaking often).
 
 clientId = "iZIs9mchVcX5lhVRyQGGAYlNPVldzAoX"
 premiumClientId = "GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy"
-appVersion = "1575626913"
+appVersion = "1583333430"
 lastTrackIndexFilePath = "last_track_index.txt"
 lastTrackIndex = 0
 resumeDownloadFlag = False
@@ -62,9 +62,12 @@ def main():
             print("An error occured while updating!")
         return
 
+    if debugFlag == True:
+        print("Debugging output enabled!")
+
     soundcloudUrl = input("Please enter a URL: ")
-    #If the playlist flag is set just download it as a playlist right away,
-    #otherwise just let the regex decide
+    # If the playlist flag is set just download it as a playlist right away,
+    # otherwise just let the regex decide
 
     if playlistFlag == 1:
         try:
@@ -88,6 +91,10 @@ def main():
         if linkType == 2 and premiumFlag == 0:
             downloadPlaylist(soundcloudUrl, 0)
     print("Done!")
+
+def log_debug(message):
+    if debugFlag == True:
+        print(message)
 
 def updateLinux():
     if platform.system() != "Linux":
@@ -146,21 +153,17 @@ def updateWindows():
             file.filename = os.path.basename(file.filename)
             if file.filename == "scdl":
                 zip.extract(file, os.getcwd())
-            if file.filename == "curl.exe":
-                zip.extract(file, os.getcwd())
             if file.filename == "README.md":
                 zip.extract(file, os.getcwd())
 
     os.remove("scdl-latest.zip")
     try:
-        shutil.rmtree("git", onerror=remove_readonly)
+        shutil.rmtree("git", onerror=removeReadonly)
     except:
         pass
-    os.mkdir("bin")
-    os.rename("curl.exe", "bin/curl.exe")
     print("Updated!")
 
-def remove_readonly(func, path, _):
+def removeReadonly(func, path, _):
     os.chmod(path, stat.S_IWRITE)
     func(path)
 
@@ -301,7 +304,7 @@ def downloadSingleTrack(soundcloudUrl, trackTitle, hqFlag, optionalAlbum):
                         else:
                             m4aFailedFlag = 1
 
-    if premiumFlag == 0 or hqFlag == 0 or size == 0:
+    elif premiumFlag == 0 or hqFlag == 0 or size == 0:
         '''
         Takes effect when the download either failed or the premium
         option wasn't chosen, downloads the regular 128kbps file
@@ -436,7 +439,7 @@ def cleanUp(trackId, trackName):
         os.remove(str(trackId) + ".m4a")
     if os.path.isfile(str(trackId) + ".mp3") == True:
         os.remove(str(trackId) + ".mp3")        
-                
+
 def changeDirectory(folderName):
     '''
     makes directory with the name of the album passed to it, creates it if needed
@@ -475,16 +478,32 @@ def downloadPremium(trackId):
     hacky solution will continue to work. Probably until I cancel
     my SoundCloud Go Plus subscription (or rather trial)
     '''
-    if platform.system() == 'Windows':
-        curlPremiumJsonUrl = pathToCurlWindows + u" \"https://api-v2.soundcloud.com/tracks?ids=" + str(trackId) + u"&client_id=" + str(premiumClientId) + "&%5Bobject%20Object%5D=&app_version=1570441876&app_locale=de\" -H \"Sec-Fetch-Mode: cors\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"Content-Type: application/json\" -H \"Accept: application/json, text/javascript, */*; q=0.1\" -H \"Referer: https://soundcloud.com/\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + u".txt"
-    else:
-        curlPremiumJsonUrl = u"curl \"https://api-v2.soundcloud.com/tracks?ids=" + str(trackId) + u"&client_id=" + str(premiumClientId) + "&%5Bobject%20Object%5D=&app_version=1570441876&app_locale=de\" -H \"Sec-Fetch-Mode: cors\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"Content-Type: application/json\" -H \"Accept: application/json, text/javascript, */*; q=0.1\" -H \"Referer: https://soundcloud.com/\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + u".txt"
-    
-    os.system(curlPremiumJsonUrl)
-    
-    jsonFilename = str(trackId) + u".txt"
-    
-    file = codecs.open(jsonFilename,'r', encoding='UTF-8')
+    print("downloadPremium()")
+    while True:   
+        try:
+            r = requests.get("https://api-v2.soundcloud.com/tracks?ids={}&client_id={}&%5Bobject%20Object%5D=&app_version={}&app_locale=de".format(str(trackId), premiumClientId, appVersion),
+                headers={
+                "Sec-Fetch-Mode":"cors",
+                "Origin": "https://soundcloud.com",
+                "Authorization": "OAuth 2-290697-69920468-HvgOO5GJcVtYD39",
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/javascript, */*; q=0.1",
+                "Referer": "https://soundcloud.com/",
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36",
+                "DNT": "1",
+                })
+        except Exception as e:
+            print(e)
+        print("Status Code: {}".format(r.status_code))
+        if r.status_code == 200:
+            break
+        else:
+            time.sleep(2)
+
+    with open(str(trackId) + ".txt", "w") as file:
+        file.write(r.text)
+
+    file = codecs.open(str(trackId) + ".txt",'r', encoding='UTF-8')
     data = json.loads(file.readlines()[0])
     url = data[0]['media']['transcodings'][0]['url']
 
@@ -493,13 +512,30 @@ def downloadPremium(trackId):
     That link to the hls stream leads to yet another link, which
     contains yet another link, which contains...
     '''
-    if platform.system() == 'Windows':
-        curlPremiumm3u8 = pathToCurlWindows + " \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".txt"
-    else:
-        curlPremiumm3u8 = "curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".txt"
-    os.system(curlPremiumm3u8)
-    m3u8Filename = str(trackId) + ".txt"
-    with open(m3u8Filename) as f:
+
+    while True:
+        try:   
+            r = requests.get(url,
+                headers={
+                    "Sec-Fetch-Mode": "cors",
+                    "Referer": "https://soundcloud.com/",
+                    "Origin": "https://soundcloud.com",
+                    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36",
+                    "Authorization": "OAuth 2-290697-69920468-HvgOO5GJcVtYD39",
+                    "DNT": "1",
+                })
+        except Exception as e:
+            print(e)
+        print("Status Code: {}".format(r.status_code))
+        if r.status_code == 200:
+            break
+        else:
+            time.sleep(2)
+
+    with open(str(trackId) + ".txt", "w") as file:
+        file.write(r.text)
+
+    with open(str(trackId) + ".txt") as f:
         data = json.loads(f.read())
         url = data['url']
 
@@ -508,43 +544,104 @@ def downloadPremium(trackId):
     it basically only replicates excactly what a browser would do (go
     look at the network tab in the explore tool and see for yourself)
     '''
-    if platform.system() == 'Windows':
-        os.system(pathToCurlWindows + " \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".m3u8")
-    else:
-        os.system("curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".m3u8")
+
+    while True:
+        try:
+            r = requests.get(url,
+                headers={
+                "Sec-Fetch-Mode": "cors",
+                "Referer": "https://soundcloud.com",
+                "Origin": "https://soundcloud.com",
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36",
+                "Authorization": "OAuth 2-290697-69920468-HvgOO5GJcVtYD39",
+                "DNT": "1"
+                })
+        except Exception as e:
+            print(e)
+        print("Status Code: {}".format(r.status_code))
+        if r.status_code == 200:
+            break
+        else:
+            time.sleep(2)
+
+    with open(str(trackId) + ".m3u8", "w") as file:
+        file.write(r.text)
 
     '''
     Stitch the .m4a together using ffmpeg. Thank God I don't have to do this by hand.
     By the way, ffmpeg hates https so it needs to be whitelisted.
     '''
-    ffmpegCommand = ffmpegPath + " -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".m4a -loglevel panic"
-    os.system(ffmpegCommand)
+
+    os.system("{} -y -protocol_whitelist file,http,https,tcp,tls -i {}.m3u8 -c copy {}.m4a -loglevel panic".format(ffmpegPath, trackId, trackId))
 
 def downloadPremiumPrivate(trackId, soundcloudUrl):
+    log_debug("downloadPremiumPrivate()")
     secretToken = soundcloudUrl.split("/")[5]
-    if platform.system() == 'Windows':
-        curlPremiumJsonUrl = pathToCurlWindows + u" \"https://api-v2.soundcloud.com/tracks/soundcloud:tracks:" + str(trackId) + '?client_id=1SoBYKkeYLyQsSAiFMTGD0dc0ShJDKUf&secret_token=' + str(secretToken) + "&app_version=1571932339&app_locale=de\" -H \"Connection: keep-alive\" -H \"Accept: application/json, text/javascript, */*; q=0.01\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36\" -H \"DNT: 1\" -H \"Sec-Fetch-Site: same-site\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Accept-Encoding: gzip, deflate, br\" -H \"Accept-Language: de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7\" -k -s --compressed > " + str(trackId) + u".txt"
-    else:
-        curlPremiumJsonUrl = "curl \"https://api-v2.soundcloud.com/tracks/soundcloud:tracks:" + str(trackId) + '?client_id=1SoBYKkeYLyQsSAiFMTGD0dc0ShJDKUf&secret_token=' + str(secretToken) + "&app_version=1571932339&app_locale=de\" -H \"Connection: keep-alive\" -H \"Accept: application/json, text/javascript, */*; q=0.01\" -H \"Origin: https://soundcloud.com\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36\" -H \"DNT: 1\" -H \"Sec-Fetch-Site: same-site\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Accept-Encoding: gzip, deflate, br\" -H \"Accept-Language: de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7\" -k -s --compressed > " + str(trackId) + u".txt"
-    os.system(curlPremiumJsonUrl)
-    jsonFilename = str(trackId) + ".txt"
+    log_debug(f"secretToken: {secretToken}")
+    log_debug(f"trackId: {trackId}")
 
-    file = codecs.open(jsonFilename,'r', encoding='UTF-8')
+    while True:
+        try:
+            r = requests.get("https://api-mobi.soundcloud.com/tracks/soundcloud:tracks:{}?secret_token={}&client_id={}&&app_version={}&app_locale=de".format(trackId, secretToken, clientId, appVersion),
+                headers={
+                "Connection": "keep-alive",
+                "Accept": "application/json, text/javascript, */*; q=0.01",
+                "Authorization": "OAuth 2-290697-69920468-HvgOO5GJcVtYD39",
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36",
+                "DNT": "1",
+                "Sec-Fetch-Site": "same-site",
+                "Sec-Fetch-Mode": "cors",
+                "Referer": "https://soundcloud.com/",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7"
+                })
+        except Exception as e:
+            print(e)
+
+        log_debug("Status Code: {}".format(r.status_code))
+        if r.status_code == 200:
+            break
+        else:
+            time.sleep(2)
+
+    #print(r.content)
+    with open(str(trackId) + ".txt", 'w+') as file:
+        file.write(r.text)
+
+
+    file = codecs.open(str(trackId) + ".txt",'r', encoding='UTF-8')
     data = json.loads(file.readlines()[0])
-    url = data[0]['media']['transcodings'][0]['url']
-
+    url = data['media']['transcodings'][0]['url']
+    log_debug(f"URL: {url}")
     '''
     In the words of Dillon Francis' alter ego DJ Hanzel: "van deeper"
     That link to the hls stream leads to yet another link, which
     contains yet another link, which contains...
     '''
-    if platform.system() == 'Windows':
-        curlPremiumm3u8 = str(Path("./bin/curl.exe").absolute()) + " \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".txt"
-    else:
-        curlPremiumm3u8 = "curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".txt"
-    os.system(curlPremiumm3u8)
-    m3u8Filename = str(trackId) + ".txt"
-    with open(m3u8Filename) as f:
+    while True:
+        try:
+            r = requests.get(url,
+                headers={
+                "Sec-Fetch-Mode": "cors",
+                "Referer": "https://soundcloud.com/",
+                "Origin": "https://soundcloud.com",
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36",
+                "Authorization": "OAuth 2-290697-69920468-HvgOO5GJcVtYD39",
+                "DNT": "1",
+                })
+        except Exception as e:
+            print(e)
+
+        log_debug("Status Code: {}".format(r.status_code))
+        if r.status_code == 200:
+            break
+        else:
+            time.sleep(2)
+
+    with open(str(trackId) + ".txt", "w") as file:
+        file.write(r.text)
+
+    with open(str(trackId) + ".txt") as f:
         data = json.loads(f.read())
         url = data['url']
 
@@ -553,17 +650,34 @@ def downloadPremiumPrivate(trackId, soundcloudUrl):
     it basically only replicates excactly what a browser would do (go
     look at the network tab in the explore tool and see for yourself)
     '''
-    if platform.system() == 'Windows':
-        os.system(str(Path("./bin/curl.exe").absolute()) + " \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".m3u8")    
-    else:
-        os.system("curl \"" + url + "\" -H \"Sec-Fetch-Mode: cors\" -H \"Referer: https://soundcloud.com/\" -H \"Origin: https://soundcloud.com\" -H \"User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\" -H \"Authorization: OAuth 2-290697-69920468-HvgOO5GJcVtYD39\" -H \"DNT: 1\" -k -s --compressed > " + str(trackId) + ".m3u8")
+    while True:
+        try:
+            r = requests.get(url,
+                headers={
+                "Sec-Fetch-Mode": "cors",
+                "Referer": "https://soundcloud.com/",
+                "Origin": "https://soundcloud.com",
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36",
+                "Authorization": "OAuth 2-290697-69920468-HvgOO5GJcVtYD39",
+                "DNT": "1"
+                })
+        except Exception as e:
+            print(e)
+        print("Status Code: {}".format(r.status_code))
+        if r.status_code == 200:
+            break
+        else:
+            sleep(2)
+
+    print(r.text)
+    with open(str(trackId) + ".m3u8", "w") as file:
+        file.write(r.text)
 
     '''
     Stitch the .m4a together using ffmpeg. Thank God I don't have to do this by hand.
     By the way, ffmpeg hates https so it needs to be whitelisted.
     '''
-    ffmpegCommand = ffmpegPath + " -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".m4a -loglevel panic"
-    os.system(ffmpegCommand)
+    os.system("{} -y -protocol_whitelist file,http,https,tcp,tls -i {}.m3u8 -c copy {}.m4a -loglevel panic".format(ffmpegPath, trackId, trackId))
 
 def downloadRegular(trackId, soundcloudUrl):
     resolveRegularPrivateUrl = "https://api-mobi.soundcloud.com/resolve?permalink_url=" + soundcloudUrl + "&client_id=" + clientId + "&format=json&app_version=" + appVersion
@@ -579,8 +693,7 @@ def downloadRegular(trackId, soundcloudUrl):
     filename = str(trackId) + ".m3u8"
     urllib.request.urlretrieve(privateMp3Url, filename)
 
-    ffmpegCommand = ffmpegPath + " -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".mp3 -loglevel panic"
-    os.system(ffmpegCommand)
+    os.system("{} -y -protocol_whitelist file,http,https,tcp,tls -i {}.m3u8 -c copy {}.mp3 -loglevel panic".format(ffmpegPath, trackId, trackId))
 
 def downloadRegularPrivate(trackId, soundcloudUrl):
     resolveRegularPrivateUrl = "https://api-mobi.soundcloud.com/resolve?permalink_url=" + soundcloudUrl + "&client_id=" + clientId + "&format=json&app_version=" + appVersion
@@ -601,11 +714,9 @@ def downloadRegularPrivate(trackId, soundcloudUrl):
         privateMp3Url = privateMp3Url.content
         privateMp3UrlJson = json.loads(privateMp3Url)
         privateMp3Url = privateMp3UrlJson["url"]
-    filename = str(trackId) + ".m3u8"
-    urllib.request.urlretrieve(privateMp3Url, filename)
+    urllib.request.urlretrieve(privateMp3Url, str(trackId) + ".m3u8")
 
-    ffmpegCommand = ffmpegPath + " -y -protocol_whitelist file,http,https,tcp,tls -i " + str(trackId) + ".m3u8 -c copy " + str(trackId) + ".mp3 -loglevel panic"
-    os.system(ffmpegCommand)
+    os.system("{} -y -protocol_whitelist file,http,https,tcp,tls -i {}.m3u8 -c copy {}.mp3 -loglevel panic".format(ffmpegPath, trackId, trackId))
 
 def getTags(soundcloudUrl):
     '''
@@ -630,7 +741,7 @@ def getTags(soundcloudUrl):
             with open(metadataFilename, 'w') as json_file:
                 json.dump(tags, json_file, sort_keys=True, indent=4)
         except:
-            print("!!! An error occured while writing the metadata to a file!")
+            print("An error occured while writing the metadata to a file!")
 
     try:
         print("trackName: {}".format(trackName))
@@ -779,10 +890,9 @@ def downloadPlaylist(soundcloudUrl, hqFlag):
 
 def getPlaylistId(soundcloudUrl):
     '''
-    The name says it all, that's really al there is to it.
+    The name says it all, that's really all there is to it.
     '''
-    resolveUrl = u"https://api-mobi.soundcloud.com/resolve?permalink_url=" + soundcloudUrl + u"&client_id=" + clientId + u"&format=json&app_version=" + appVersion
-    playlistIdRequest = requests.get(resolveUrl).content
+    playlistIdRequest = requests.get("https://api-mobi.soundcloud.com/resolve?permalink_url={}&client_id={}&format=json&app_version={}".format(soundcloudUrl, clientId, appVersion)).content
     playlistIdRequest = json.loads(playlistIdRequest)
     return playlistIdRequest["id"]
 
@@ -792,8 +902,7 @@ def getPlaylistTracks(playlistId):
     names as well as their IDs, all of which are necessary to download
     the track seamlessly.
     '''
-    playlistApiUrl = "http://api.soundcloud.com/playlists/" + str(playlistId) + "?client_id=" + str(clientId)
-    playlistUrls = requests.get(playlistApiUrl)
+    playlistUrls = requests.get("http://api.soundcloud.com/playlists/{}?client_id={}".format(playlistId, clientId))
     permalinkUrls = json.loads(playlistUrls.content)
     album = permalinkUrls["title"]
     print("Album: {}".format(album))
@@ -829,18 +938,16 @@ def getPlaylistDescriptions(playlistId):
     it's not efficient but one more API request on top of countless
     other ones won't hurt.
     '''
-    playlistApiUrl = "http://api.soundcloud.com/playlists/" + str(playlistId) + "?client_id=" + str(clientId)
-    playlistUrls = requests.get(playlistApiUrl)
+    playlistUrls = requests.get("http://api.soundcloud.com/playlists/{}?client_id={}".format(playlistId, clientId))
     permalinkUrls = json.loads(playlistUrls.content)
     description = []
-    trackCount = int(permalinkUrls["track_count"])
 
-    for i in range(trackCount):
+    for i in range(int(permalinkUrls["track_count"])):
         try:
             description.append(i)
             description[i] = permalinkUrls["tracks"][i]["description"]
         except IndexError:
-            break
+            description[i] = ""
 
     return description
 
@@ -901,8 +1008,20 @@ def parseStuff():
         action="store_true",
         dest="updateWindowsFlag"
     )
+    parser.add_argument(
+        '--debug',
+        help="Show output for debugging",
+        action="store_true",
+        dest="debugFlag"
+    )
 
     args = parser.parse_args()
+
+    global debugFlag
+    if args.debugFlag is True:
+        debugFlag = True
+    else:
+        debugFlag = False
 
     global updateLinuxFlag
     if args.updateLinuxFlag is True:
