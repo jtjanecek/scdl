@@ -592,7 +592,7 @@ def downloadPremium(trackId):
 
 def downloadSegment(segment_urls, i, trackId):
     if platform.system() == 'Linux':
-        print("\033[K", "Segment: [{} / {}]".format(i + 1, len(segment_urls) + 1), "\r", end='')
+        print("\033[K", "Segment: [{} / {}]".format(i + 1, len(segment_urls)), "\r", end='')
     urllib.request.urlretrieve(segment_urls[i], f"{trackId}/{i}.m4a")
 
 def downloadM3U8(trackId):
