@@ -19,6 +19,7 @@ import tempfile
 import subprocess
 from mutagen.mp3 import EasyMP3
 from mutagen.easyid3 import EasyID3
+from joblib import Parallel, delayed
 from mutagen.mp4 import MP4, MP4Cover
 from pathlib import Path, PureWindowsPath
 from mutagen.id3 import ID3, APIC, TIT2, TALB, TPE1, TPE2, COMM, USLT, TCOM, TCON, TDRC
@@ -591,7 +592,43 @@ def downloadPremium(trackId):
     By the way, ffmpeg hates https so it needs to be whitelisted.
     '''
 
-    os.system("{} -y -protocol_whitelist file,http,https,tcp,tls -i {}.m3u8 -c copy {}.m4a -loglevel panic".format(ffmpegPath, trackId, trackId))
+    downloadM3U8(trackId)
+    #os.system("{} -y -protocol_whitelist file,http,https,tcp,tls -i {}.m3u8 -c copy {}.m4a -loglevel panic".format(ffmpegPath, trackId, trackId))
+
+def downloadSegment(segment_urls, i, trackId):
+    urllib.request.urlretrieve(segment_urls[i], f"{trackId}/{i}.m4a")
+
+def downloadM3U8(trackId):
+    segment_urls = []
+    regex = re.compile('^.*https.*$')
+    with open(f"{trackId}.m3u8") as m3u8file:
+        lines = m3u8file.readlines()
+        m3u8file.close()
+    for line in lines:
+        if regex.search(line):
+            line = line.replace('#EXT-X-MAP:URI=','')
+            line = line.replace('"', '')
+            line = line.replace('\n', '')
+            segment_urls.append(line)
+
+    if not os.path.exists(f"{trackId}"):
+        os.mkdir(f"{trackId}")
+    Parallel(n_jobs=16)(delayed(downloadSegment)(segment_urls, i, trackId) for i in range(len(segment_urls)))
+
+    segment_filenames = []
+    for i in range(len(segment_urls)):
+        segment_filenames.append(f"{i}.m4a")
+
+    os.chdir(f"{trackId}")
+
+    with open(str(trackId) + '.m4a', 'ab') as outfile:
+        for file in segment_filenames:
+            with open(file, "rb") as file2:
+                outfile.write(file2.read())
+    
+    shutil.move(f"{trackId}.m4a", f"../{trackId}.m4a")
+    os.chdir("..")
+    shutil.rmtree("{}".format(trackId))
 
 def downloadPremiumPrivate(trackId, soundcloudUrl):
     log_debug("downloadPremiumPrivate()")
@@ -623,7 +660,6 @@ def downloadPremiumPrivate(trackId, soundcloudUrl):
         else:
             time.sleep(2)
 
-    #print(r.content)
     with open(str(trackId) + ".txt", 'w+') as file:
         file.write(r.text)
 
