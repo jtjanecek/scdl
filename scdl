@@ -499,7 +499,7 @@ def downloadPremium(trackId):
     hacky solution will continue to work. Probably until I cancel
     my SoundCloud Go Plus subscription (or rather trial)
     '''
-    print("downloadPremium()")
+    log_debug("downloadPremium()")
     while True:   
         try:
             r = requests.get("https://api-v2.soundcloud.com/tracks?ids={}&client_id={}&%5Bobject%20Object%5D=&app_version={}&app_locale=de".format(str(trackId), premiumClientId, appVersion),
