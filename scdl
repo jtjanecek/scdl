@@ -43,6 +43,10 @@ ssl._create_default_https_context = ssl._create_unverified_context
 if platform.system() == 'Windows':
     pathToCurlWindows = str(Path("./bin/curl.exe").absolute())
 
+log_debug(f"clientId = {clientId}")
+log_debug(f"premiumClientId = {premiumClientId}")
+log_debug(f"appVersion = {appVersion}")
+
 def main():
     parseStuff()
 
@@ -97,23 +101,34 @@ def log_debug(message):
         print(message)
 
 def updateLinux():
+    log_debug(">> updateLinux()")
     if platform.system() != "Linux":
         print("You're not running Linux!")
         return
     if os.geteuid() != 0:
+        log_debug("euid = {}".format(os.geteuid()))
         print("This needs to be run as root!")
         return
     print("Getting latest version from Github...")
     response  = requests.get("https://github.com/mrwnwttk/scdl/archive/master.zip")
+    log_debug("URL: https://github.com/mrwnwttk/scdl/archive/master.zip")
+    log_debug("Redirected to: {}".format(response.url))
+    log_debug("Status code: {}".format(response.status_code))
     urllib.request.urlretrieve(response.url, "scdl-latest.zip")
     with zipfile.ZipFile("scdl-latest.zip", "r") as zip:
+        log_debug("Files inside ZIP:")
+        log_debug("{}".format(zip.namelist()))
         for file in zip.infolist():
             file.filename = os.path.basename(file.filename)
             if file.filename == "scdl" or file.filename == "install.sh":
                     zip.extract(file, os.getcwd())
+    log_debug("Removing scdl-latest.zip...")
     os.remove("scdl-latest.zip")
+    log_debug("Executing install.sh...")
     os.system("./install.sh")
+    log_debug("Removing scdl file from current directory...")
     os.remove("scdl")
+    log_debug("Removing install.sh file from current directory...")
     os.remove("install.sh")
     print("Updated!")
 
@@ -396,6 +411,9 @@ def renameFile(trackId, trackName, premiumFlag):
     (sometimes) problematic titles as filenames.
     That way it's easier to just rename them afterwards.
     '''
+
+    log_debug(">> renameFilename()")
+
     trackName = repairFilename(trackName)
     #We're dealing with a .m4a file here
     if premiumFlag == 1:  
@@ -722,10 +740,12 @@ def getTags(soundcloudUrl):
     '''
     Get the big json file containing basically all the metadata using the API
     '''
-    resolveUrl = u"https://api.soundcloud.com/resolve.json?url="
+    log_debug(f"getTags(soundcloudUrl = {soundcloudUrl})")
     while True:
         try:
-            a = requests.get(str(resolveUrl) + str(soundcloudUrl) + u"&client_id=" + str(clientId))
+            a = requests.get("https://api.soundcloud.com/resolve.json?url=" + soundcloudUrl + "&client_id=" + clientId)
+            log_debug(f"URL: {a.url}")
+            log_debug(f"Status code: {a.status_code}")
             a = a.content
             tags = json.loads(a)
             trackName = tags["title"]
@@ -733,6 +753,8 @@ def getTags(soundcloudUrl):
             time.sleep(2)
             continue
         break
+
+    log_debug("Got tags!")
 
     if(metadataFlag == 1):
         metadataFilename = repairFilename(trackName) + "_" + str(tags["id"]) + "_metadata.json"
@@ -750,7 +772,7 @@ def getTags(soundcloudUrl):
     
     artist = tags["user"]["username"]
 
-    print("artist: {}".format(artist))
+    print("Artist: {}".format(artist))
 
     '''
     the json file doesn't reveal the biggest available cover art, 
@@ -758,17 +780,21 @@ def getTags(soundcloudUrl):
     '''
     cover = tags["artwork_url"]
     if cover != None:
+        log_debug("Cover URL (large) for track present!")
         coverFlag = 1
         cover = cover.replace("large", "t500x500")
         try:
             urllib.request.urlretrieve(cover, "cover.jpg")
+            log_debug("Cover URL (500x500) for track present!")
         except:
             try:
                 coverFlag = 1
                 cover = tags["user"]["avatar_url"]
                 cover = cover.replace("large", "t500x500")
                 urllib.request.urlretrieve(cover, "cover.jpg")
+                log_debug("Got 500x500 cover from track!")
             except urllib.error.HTTPError:
+                log_debug("An error occured while attempting to download the cover from the track! (Can be the case for ancient tracks)")
                 coverFlag = 0
     else:
         '''
@@ -776,14 +802,16 @@ def getTags(soundcloudUrl):
         avatar of the user is shown instead. We can implement that
         here. Once again the full size picture is not in the json file...
         '''
+        log_debug("Attempting to get cover art from artist profile picture...")
         try:
             coverFlag = 1
             cover = tags["user"]["avatar_url"]
             cover = cover.replace("large", "t500x500")
             urllib.request.urlretrieve(cover, "cover.jpg")
+            log_debug("Got cover art from artist!")
         except urllib.error.HTTPError:
+            log_debug("Error while getting cover from artist profile picture")
             coverFlag = 0
-
 
     return trackName, artist, coverFlag
 
@@ -791,11 +819,14 @@ def getDescription(soundcloudUrl):
     '''
     gets the description separately
     '''
-    resolveUrl = "https://api.soundcloud.com/resolve.json?url="
-    a = requests.get(resolveUrl + soundcloudUrl + "&client_id=" + clientId)
+    log_debug(f">> getDescription(soundcloudUrl = {soundcloudUrl})")
+    a = requests.get("https://api.soundcloud.com/resolve.json?url=" + soundcloudUrl + "&client_id=" + clientId)
+    log_debug(f"URL: {a.url}")
+    log_debug(f"Status code: {a.status_code}")
     a = a.content
     tags = json.loads(a)
     description = tags["description"]
+    log_debug("Got description!")
     return description
 
 def addTags(filename, trackName, artist, album, coverFlag, description, m4aFlag):
@@ -807,9 +838,10 @@ def addTags(filename, trackName, artist, album, coverFlag, description, m4aFlag)
     album name will be the name of the playlist instead of
     "SoundCloud"
     '''
-    repairedFilename = filename
+    log_debug(f"addTags(filename = {filename}, trackName = {trackName}, artist = {artist}, album = {album}, coverFlag = {coverFlag}, m4aFlag = {m4aFlag})")
     if m4aFlag == 1:
-        tags = MP4(repairedFilename).tags
+        log_debug("Tagging .m4a...")
+        tags = MP4(filename).tags
         if description != None:
             tags["desc"] = description
         tags["\xa9nam"] = trackName
@@ -823,12 +855,13 @@ def addTags(filename, trackName, artist, album, coverFlag, description, m4aFlag)
             tags["covr"] = [
                 MP4Cover(f.read(), imageformat=MP4Cover.FORMAT_JPEG)
             ]
-        tags.save(repairedFilename)
+        tags.save(filename)
 
 
 
     if m4aFlag == 0:
-        audio = EasyMP3(repairedFilename)
+        log_debug("Tagging .mp3...")
+        audio = EasyMP3(filename)
         audio['title'] = trackName
         audio['artist'] = artist
 
@@ -839,7 +872,7 @@ def addTags(filename, trackName, artist, album, coverFlag, description, m4aFlag)
         audio.save(v2_version=3)
 
         if coverFlag != 0:
-            audio = ID3(repairedFilename)
+            audio = ID3(filename)
             if description != None:
                 audio.add(
                 USLT(
@@ -862,6 +895,7 @@ def addTags(filename, trackName, artist, album, coverFlag, description, m4aFlag)
             audio.save(v2_version=3)
 
 def downloadPlaylist(soundcloudUrl, hqFlag):
+    log_debug(f">> downloadPlaylist(soundcloudUrl = {soundcloudUrl}, hqFlag = {hqFlag})")
     playlistId = getPlaylistId(soundcloudUrl)
     print("Playlist ID: {}".format(playlistId))
     permalinkUrl, trackId, trackName, album, trackCount = getPlaylistTracks(playlistId)
@@ -885,16 +919,20 @@ def downloadPlaylist(soundcloudUrl, hqFlag):
         lastTrackIndexFile = open(lastTrackIndexFilePath, 'w')
         lastTrackIndexFile.write(str(index))
         lastTrackIndexFile.close()
-    print("Download of playlist finished, deleting last_track_index.txt ...")
+    log_debug("Download of playlist finished, deleting last_track_index.txt ...")
     os.remove("last_track_index.txt")
 
 def getPlaylistId(soundcloudUrl):
     '''
     The name says it all, that's really all there is to it.
     '''
+    log_debug(f">> getPlaylistId(soundcloudUrl = {soundcloudUrl})")
     playlistIdRequest = requests.get("https://api-mobi.soundcloud.com/resolve?permalink_url={}&client_id={}&format=json&app_version={}".format(soundcloudUrl, clientId, appVersion)).content
+    log_debug(f"URL: {playlistIdRequest.url}")
+    log_debug(f"Status code: {playlistIdRequest.status_code}")
     playlistIdRequest = json.loads(playlistIdRequest)
-    return playlistIdRequest["id"]
+    log_debug(f"Playlist ID: {playlistIdRequest["id"]}")
+        return playlistIdRequest["id"]
 
 def getPlaylistTracks(playlistId):
     '''
@@ -902,14 +940,18 @@ def getPlaylistTracks(playlistId):
     names as well as their IDs, all of which are necessary to download
     the track seamlessly.
     '''
+    log_debug(f">> getPlaylistTracks(playlistId = {playlistId})")
     playlistUrls = requests.get("http://api.soundcloud.com/playlists/{}?client_id={}".format(playlistId, clientId))
+    log_debug(f"Playlist URL: {playlistUrls.url}")
+    log_debug(f"Status code: {playlistUrls.status_code}")
     permalinkUrls = json.loads(playlistUrls.content)
     album = permalinkUrls["title"]
-    print("Album: {}".format(album))
+    print(f"Album: {album}")
     permalinkUrl = []
     trackId = []
     trackTitle = []
     trackCount = int(permalinkUrls["track_count"])
+    log_debug(f"trackCount = {trackCount}")
 
     for i in range(trackCount):
         try:
@@ -921,7 +963,7 @@ def getPlaylistTracks(playlistId):
             trackTitle[i] = permalinkUrls["tracks"][i]["title"]
         except IndexError:
             missingTracks = trackCount - i
-            print("Sorry, {} of the tracks in this playlist are not available".format(str(missingTracks)),
+            print(f"Sorry, {str(missingTracks)} of the tracks in this playlist are not available",
                 "in your country and can therefore not be downloaded.",
                 "Please use a VPN.")
             trackCount = i
@@ -938,15 +980,21 @@ def getPlaylistDescriptions(playlistId):
     it's not efficient but one more API request on top of countless
     other ones won't hurt.
     '''
+    log_debug(f">> getPlaylistDescriptions(playlistId = {playlistId})")
     playlistUrls = requests.get("http://api.soundcloud.com/playlists/{}?client_id={}".format(playlistId, clientId))
+    log_debug(f"Playlist URL: {playlistUrls.url}")
+    log_debug(f"Status code: {playlistUrls.status_code}")
     permalinkUrls = json.loads(playlistUrls.content)
     description = []
 
+    log_debug(f"Number of tracks: {int(permalinkUrls["track_count"])}")
     for i in range(int(permalinkUrls["track_count"])):
         try:
             description.append(i)
             description[i] = permalinkUrls["tracks"][i]["description"]
         except IndexError:
+            log_debug(f"Error on description (index {i}")
+            log_debug("Setting description to empty string")
             description[i] = ""
 
     return description
@@ -989,31 +1037,31 @@ def parseStuff():
         help="Path to ffmpeg. Can be the containing directory or ffmpeg executable itself",
         action="store",
         dest="ffmpegPath"
-    )
+        )
     parser.add_argument(
         '-r', '--resume',
         help="Resume download of playlist",
         action="store_true",
         dest="resumeDownloadFlag"
-    )
+        )
     parser.add_argument(
         '--update-linux',
         help="Updates (and installs) scdl to the newest version",
         action="store_true",
         dest="updateLinuxFlag"
-    )
+        )
     parser.add_argument(
         '--update-windows',
         help="Updates scdl to the newest version (within the current folder)",
         action="store_true",
         dest="updateWindowsFlag"
-    )
+        )
     parser.add_argument(
         '--debug',
         help="Show output for debugging",
         action="store_true",
         dest="debugFlag"
-    )
+        )
 
     args = parser.parse_args()
 
@@ -1076,6 +1124,15 @@ def parseStuff():
         resumeDownloadFlag = True
     else:
         resumeDownloadFlag = False
+
+    log_debug(f"debugFlag = {debugFlag}")
+    log_debug(f"updateLinuxFlag = {updateLinuxFlag}")
+    log_debug(f"updateWindowsFlag = {updateWindowsFlag}")
+    log_debug(f"descriptionDisableFlag = {descriptionDisableFlag}")
+    log_debug(f"premiumFlag = {premiumFlag}")
+    log_debug(f"metadataFlag =  {metadataFlag}")
+    log_debug(f"playlistFlag = {playlistFlag}")
+    log_debug(f"ffmpegPath = {ffmpegPath}")
 
 if __name__ == '__main__':
     main()
