@@ -41,6 +41,7 @@ lastTrackIndexFilePath = "last_track_index.txt"
 lastTrackIndex = 0
 resumeDownloadFlag = False
 debugFlag = False
+segmentsParallel = 16
 ssl._create_default_https_context = ssl._create_unverified_context
 if platform.system() == 'Windows':
     pathToCurlWindows = str(Path("./bin/curl.exe").absolute())
@@ -614,6 +615,7 @@ def downloadM3U8(trackId):
     if not os.path.exists(f"{trackId}"):
         os.mkdir(f"{trackId}")
     Parallel(n_jobs=16)(delayed(downloadSegment)(segment_urls, i, trackId) for i in range(len(segment_urls)))
+    Parallel(n_jobs=int(segmentsParallel))(delayed(downloadSegment)(segment_urls, i, trackId) for i in range(len(segment_urls)))
 
     segment_filenames = []
     for i in range(len(segment_urls)):
@@ -1099,6 +1101,12 @@ def parseStuff():
         action="store_true",
         dest="debugFlag"
         )
+    parser.add_argument(
+        '-s', '--segments',
+        help="Set number of segments that will be downloaded in parallel (default = 16)",
+        action="store",
+        dest="segmentsParallel"
+        )
 
     args = parser.parse_args()
 
@@ -1144,6 +1152,10 @@ def parseStuff():
     if args.playlistFlag is False:
         playlistFlag = False
 
+    global segmentsParallel
+    if args.segmentsParallel:
+        segmentsParallel = args.segmentsParallel
+
     global ffmpegPath
     if args.ffmpegPath:
         ffmpegPath = os.path.abspath(args.ffmpegPath)
@@ -1170,6 +1182,7 @@ def parseStuff():
     log_debug(f"metadataFlag =  {metadataFlag}")
     log_debug(f"playlistFlag = {playlistFlag}")
     log_debug(f"ffmpegPath = {ffmpegPath}")
+    log_debug(f"segmentsParallel = {segmentsParallel}")
 
 if __name__ == '__main__':
     main()
