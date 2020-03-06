@@ -515,7 +515,6 @@ def downloadPremium(trackId):
                 })
         except Exception as e:
             print(e)
-        print("Status Code: {}".format(r.status_code))
         log_debug("Status Code: {}".format(r.status_code))
         if r.status_code == 200:
             break
@@ -548,7 +547,6 @@ def downloadPremium(trackId):
                 })
         except Exception as e:
             print(e)
-        print("Status Code: {}".format(r.status_code))
         log_debug("Status Code: {}".format(r.status_code))
         if r.status_code == 200:
             break
@@ -581,7 +579,6 @@ def downloadPremium(trackId):
                 })
         except Exception as e:
             print(e)
-        print("Status Code: {}".format(r.status_code))
         log_debug("Status Code: {}".format(r.status_code))
         if r.status_code == 200:
             break
@@ -591,13 +588,7 @@ def downloadPremium(trackId):
     with open(str(trackId) + ".m3u8", "w") as file:
         file.write(r.text)
 
-    '''
-    Stitch the .m4a together using ffmpeg. Thank God I don't have to do this by hand.
-    By the way, ffmpeg hates https so it needs to be whitelisted.
-    '''
-
     downloadM3U8(trackId)
-    #os.system("{} -y -protocol_whitelist file,http,https,tcp,tls -i {}.m3u8 -c copy {}.m4a -loglevel panic".format(ffmpegPath, trackId, trackId))
 
 def downloadSegment(segment_urls, i, trackId):
     urllib.request.urlretrieve(segment_urls[i], f"{trackId}/{i}.m4a")
@@ -617,7 +608,6 @@ def downloadM3U8(trackId):
 
     if not os.path.exists(f"{trackId}"):
         os.mkdir(f"{trackId}")
-    Parallel(n_jobs=16)(delayed(downloadSegment)(segment_urls, i, trackId) for i in range(len(segment_urls)))
     Parallel(n_jobs=int(segmentsParallel))(delayed(downloadSegment)(segment_urls, i, trackId) for i in range(len(segment_urls)))
 
     segment_filenames = []
@@ -723,7 +713,6 @@ def downloadPremiumPrivate(trackId, soundcloudUrl):
                 })
         except Exception as e:
             print(e)
-        print("Status Code: {}".format(r.status_code))
         log_debug("Status Code: {}".format(r.status_code))
         if r.status_code == 200:
             break
