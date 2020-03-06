@@ -39,9 +39,14 @@ appVersion = "1583333430"
 lastTrackIndexFilePath = "last_track_index.txt"
 lastTrackIndex = 0
 resumeDownloadFlag = False
+debugFlag = False
 ssl._create_default_https_context = ssl._create_unverified_context
 if platform.system() == 'Windows':
     pathToCurlWindows = str(Path("./bin/curl.exe").absolute())
+
+def log_debug(message):
+    if debugFlag == True:
+        print(message)
 
 log_debug(f"clientId = {clientId}")
 log_debug(f"premiumClientId = {premiumClientId}")
@@ -95,10 +100,6 @@ def main():
         if linkType == 2 and premiumFlag == 0:
             downloadPlaylist(soundcloudUrl, 0)
     print("Done!")
-
-def log_debug(message):
-    if debugFlag == True:
-        print(message)
 
 def updateLinux():
     log_debug(">> updateLinux()")
@@ -931,8 +932,8 @@ def getPlaylistId(soundcloudUrl):
     log_debug(f"URL: {playlistIdRequest.url}")
     log_debug(f"Status code: {playlistIdRequest.status_code}")
     playlistIdRequest = json.loads(playlistIdRequest)
-    log_debug(f"Playlist ID: {playlistIdRequest["id"]}")
-        return playlistIdRequest["id"]
+    log_debug("Playlist ID: {}".format(playlistIdRequest["id"]))
+    return playlistIdRequest["id"]
 
 def getPlaylistTracks(playlistId):
     '''
@@ -987,7 +988,7 @@ def getPlaylistDescriptions(playlistId):
     permalinkUrls = json.loads(playlistUrls.content)
     description = []
 
-    log_debug(f"Number of tracks: {int(permalinkUrls["track_count"])}")
+    log_debug("Number of tracks: {}".format(int(permalinkUrls["track_count"])))
     for i in range(int(permalinkUrls["track_count"])):
         try:
             description.append(i)
