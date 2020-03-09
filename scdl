@@ -80,30 +80,7 @@ def main():
         print("Debugging output enabled!")
 
     soundcloudUrl = input("Please enter a URL: ")
-    # If the playlist flag is set just download it as a playlist right away,
-    # otherwise just let the regex decide
 
-    if playlistFlag == 1:
-        try:
-            if premiumFlag == 1:
-                album = downloadPlaylist(soundcloudUrl, 1)
-            if premiumFlag == 0:
-                album = downloadPlaylist(soundcloudUrl, 0)
-        except:
-            print("An Error occured while downloading the playlist!")
-            sys.exit(1)
-
-
-    if playlistFlag == 0:
-        linkType, soundcloudUrl = linkDetection(soundcloudUrl)
-        if linkType == 1 and premiumFlag == 1:
-            downloadSingleTrack(soundcloudUrl, "", 1, 0)
-        if linkType == 1 and premiumFlag == 0:
-            downloadSingleTrack(soundcloudUrl, "", 0, 0)
-        if linkType == 2 and premiumFlag == 1:
-            downloadPlaylist(soundcloudUrl, 1)
-        if linkType == 2 and premiumFlag == 0:
-            downloadPlaylist(soundcloudUrl, 0)
     print("Done!")
 
 def updateLinux():
@@ -1168,12 +1145,6 @@ def parseStuff():
     else:
         metadataFlag = False
 
-    global playlistFlag
-    if args.playlistFlag is True:
-        playlistFlag = True
-    if args.playlistFlag is False:
-        playlistFlag = False
-
     global segmentsParallel
     if args.segmentsParallel:
         segmentsParallel = args.segmentsParallel
@@ -1190,7 +1161,6 @@ def parseStuff():
     log_debug(f"descriptionDisableFlag = {descriptionDisableFlag}")
     log_debug(f"premiumFlag = {premiumFlag}")
     log_debug(f"metadataFlag =  {metadataFlag}")
-    log_debug(f"playlistFlag = {playlistFlag}")
     log_debug(f"segmentsParallel = {segmentsParallel}")
 
 if __name__ == '__main__':
