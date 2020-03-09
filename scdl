@@ -81,6 +81,16 @@ def main():
 
     soundcloudUrl = input("Please enter a URL: ")
 
+    linkType, soundcloudUrl = linkDetection(soundcloudUrl)
+
+    if linkType == 1:
+        downloadSingleTrack(soundcloudUrl, "", 1, 0)
+
+    if linkType == 2:
+        downloadPlaylist(soundcloudUrl, 1)
+
+    if linkType == 3:
+        downloadUserTracks(soundcloudUrl)
     print("Done!")
 
 def updateLinux():
@@ -244,6 +254,9 @@ def linkDetection(soundcloudUrl):
     '''
     #Fix a missing https://
     soundcloudUrl = soundcloudUrl.replace("http://", "https://")
+
+    if not "https://" in soundcloudUrl:
+        soundcloudUrl = "https://" + soundcloudUrl
 
     #Fix URL if it is a single track out of a playlist
     if '?in=' in soundcloudUrl:
