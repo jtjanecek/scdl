@@ -1142,17 +1142,35 @@ def downloadUserTracks(soundcloudUrl):
         except:
             time.sleep(2)
 
-    folder_name = get_account_name(soundcloudUrl)
-    if not os.path.exists(folder_name):
-        os.mkdir(folder_name)
-        os.chdir(folder_name)
+    changeDirectory(get_account_name(soundcloudUrl))
+    
+    if resumeDownloadFlag is True:
+        if not os.path.exists(lastTrackIndexFilePath):
+            lastTrackIndexFile = open(lastTrackIndexFilePath, 'w+')
+            lastTrackIndex = 0
+            lastTrackIndexFile.write(str(lastTrackIndex))
+        else:
+            lastTrackIndexFile = open(lastTrackIndexFilePath, 'r')
+            lastTrackIndex = int(lastTrackIndexFile.read())
     else:
-        os.chdir(folder_name)
+        if not os.path.exists(lastTrackIndexFilePath):
+            lastTrackIndexFile = open(lastTrackIndexFilePath, 'w+')
+            lastTrackIndex = 0
+            lastTrackIndexFile.write(str(lastTrackIndex))
+
+    index = 0
     for x in account_tracks:
         try:
-            downloadSingleTrack(x, "", 1, 0)
+            if index > lastTrackIndex:
+                downloadSingleTrack(x, "", 1, 0)
+                lastTrackIndexFile = open(lastTrackIndexFilePath, 'w')
+                lastTrackIndexFile.write(str(index))
+                lastTrackIndexFile.close()
         except Exception as e: 
             print(e)
+        index += 1
+    log_debug("Download of playlist finished, deleting last_track_index.txt ...")
+    os.remove("last_track_index.txt")
 
 def parseStuff():
     parser = argparse.ArgumentParser()
@@ -1254,6 +1272,7 @@ def parseStuff():
     log_debug(f"premiumFlag = {premiumFlag}")
     log_debug(f"metadataFlag =  {metadataFlag}")
     log_debug(f"segmentsParallel = {segmentsParallel}")
+    log_debug(f"resumeDownloadFlag = {resumeDownloadFlag}")
 
 if __name__ == '__main__':
     main()
