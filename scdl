@@ -182,6 +182,11 @@ def updateWindows():
         shutil.rmtree("git", onerror=removeReadonly)
     except:
         pass
+
+    os.system("python -m pip install --upgrade --user requests")
+    os.system("python -m pip install --upgrade --user mutagen")
+    os.system("python -m pip install --upgrade --user joblib")
+
     print("Updated!")
 
 def removeReadonly(func, path, _):
