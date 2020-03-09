@@ -700,8 +700,11 @@ def downloadSegment(segment_urls, i, trackId, correctDirectory):
         try:
             urllib.request.urlretrieve(segment_urls[i], "{}-{}.m4a".format(trackId, i))
             break
-        except Exception as e:
-            print(e)
+        except:
+            print("An error occured while downloading segment {}! Trying again...".format(i + 1), "\nCheck your connection or try running scdl with fewer segments in parallel (see --help)")
+            if os.path.exists("{}-{}.m4a".format(trackId, i)):
+                log_debug("Deleting failed file: {}-{}.m4a".format(trackId, i))
+                os.remove("{}-{}.m4a".format(trackId, i))
             time.sleep(2)
 
 def downloadM3U8(trackId, m3u8_file):
