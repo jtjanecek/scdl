@@ -689,6 +689,8 @@ def downloadSegment(segment_urls, i, trackId, correctDirectory):
     if platform.system() == 'Linux':
         print("\033[K\r", "Segment: [{} / {}]".format(i + 1, len(segment_urls)), "\r", end='')
 
+    if platform.system() == 'Windows':
+        print("\r Segment: [{} / {}]".format(i + 1, len(segment_urls)), "\r", end='')
     while True:
         try:
             urllib.request.urlretrieve(segment_urls[i], "{}-{}.m4a".format(trackId, i))
