@@ -2,6 +2,7 @@
 
 import os
 import re
+import gc
 import ssl
 import sys
 import json
@@ -18,6 +19,7 @@ import platform
 import tempfile
 import subprocess
 from mutagen.mp3 import EasyMP3
+from urllib.parse import unquote
 from mutagen.easyid3 import EasyID3
 from joblib import Parallel, delayed
 from mutagen.mp4 import MP4, MP4Cover
@@ -35,16 +37,17 @@ kept breaking so freaking often).
 '''
 
 clientId = "iZIs9mchVcX5lhVRyQGGAYlNPVldzAoX"
-premiumClientId = "GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy"
-appVersion = "1583333430"
+appVersion = "1575626913"
 lastTrackIndexFilePath = "last_track_index.txt"
 lastTrackIndex = 0
-resumeDownloadFlag = False
-debugFlag = False
-segmentsParallel = 16
 ssl._create_default_https_context = ssl._create_unverified_context
-if platform.system() == 'Windows':
-    pathToCurlWindows = str(Path("./bin/curl.exe").absolute())
+debugFlag = False
+resumeDownloadFlag = False
+premiumClientId = "GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy"
+premiumFlag = True
+metadataFlag = 0
+descriptionDisableFlag = 0
+segmentsParallel = 16
 
 def log_debug(message):
     if debugFlag == True:
@@ -185,6 +188,72 @@ def removeReadonly(func, path, _):
     os.chmod(path, stat.S_IWRITE)
     func(path)
 
+def downloadEmbeddedFreeDownload(trackId):
+    log_debug("downloadEmbeddedFreeDownload(trackId = {})".format(trackId))
+    while True:
+        try:
+            r = requests.get("https://api-v2.soundcloud.com/tracks?ids={}&client_id={}&%5Bobject%20Object%5D=&app_version={}&app_locale=de".format(str(trackId), premiumClientId, appVersion),
+                headers={
+                "Sec-Fetch-Mode":"cors",
+                "Origin": "https://soundcloud.com",
+                "Authorization": "OAuth 2-290697-69920468-HvgOO5GJcVtYD39",
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/javascript, */*; q=0.1",
+                "Referer": "https://soundcloud.com/",
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36",
+                "DNT": "1",
+                })
+        except Exception as e:
+            print(e)
+        log_debug("URL: {}".format(r.url))
+        log_debug("Status Code: {}".format(r.status_code))
+        log_debug("Response: {}".format(r.text))
+        if r.status_code == 200:
+            break
+        else:
+            log_debug("Error: did not get Status code 200 (OK)... Trying again...")
+            time.sleep(2)
+    data = json.loads(r.text)
+
+    if data[0]['downloadable'] == True:
+        print("This track has the free download enabled!")
+        if data[0]['has_downloads_left'] == False:
+            print("The download has a restricted number of downloads, not available anymore :(")
+            raise Exception("No free download available!")
+        if data[0]['has_downloads_left'] == True:
+            url = f"https://api-v2.soundcloud.com/tracks/{trackId}/download?client_id={clientId}&app_version={appVersion}&app_locale=de"
+            while True:
+                try:
+                    r = requests.get(url)
+                    log_debug("URL: {}".format(r.url))
+                    log_debug("Status code: {}".format(r.status_code))
+                    log_debug("Content: {}".format(r.content))
+                    x = json.loads(r.content)
+                    r = requests.head(x['redirectUri'],
+                        headers={
+                        "Sec-Fetch-Mode":"cors",
+                        "Origin": "https://soundcloud.com",
+                        "Authorization": "OAuth 2-290697-69920468-HvgOO5GJcVtYD39",
+                        "Content-Type": "application/json",
+                        "Accept": "application/json, text/javascript, */*; q=0.1",
+                        "Referer": "https://soundcloud.com/",
+                        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36",
+                        "DNT": "1",
+                        })
+                    try:
+                        filename = r.headers['x-amz-meta-original-filename']
+                    except:
+                        filename = re.findall("filename=\"(.+)\"", r.headers['content-disposition'])[0]
+                        filename = unquote(filename)
+                    print("Filename: {}".format(filename))
+                    urllib.request.urlretrieve(x['redirectUri'], filename)
+                    break
+                except Exception as e:
+                    print(e)
+                    time.sleep(2)
+    else:
+        raise Exception("No free download available!")
+
 def linkDetection(soundcloudUrl):
     '''
     detects the type of link, as a fallback for a lack of playlist flag
@@ -232,12 +301,22 @@ def downloadSingleTrack(soundcloudUrl, trackTitle, hqFlag, optionalAlbum):
         album = optionalAlbum
     else:
         album = "SoundCloud"
+
     '''
     m4a premium download, only happens when both flags are set
     '''
+    log_debug("Getting Track ID for {}".format(soundcloudUrl))
+    trackId = getTrackId(soundcloudUrl)
+    if trackId == 0:
+        print("Cannot download this track, skipping it!")
+        return
+    try:
+        downloadEmbeddedFreeDownload(trackId)
+        return
+    except:
+        log_debug("No free download available!")
 
     if premiumFlag == 1 and hqFlag == 1:
-        trackId = getTrackId(soundcloudUrl)
         size = 0
         m4aFailedFlag = 0
         if resumeDownloadFlag == True:
@@ -373,7 +452,6 @@ def downloadSingleTrack(soundcloudUrl, trackTitle, hqFlag, optionalAlbum):
             '''
             addTags(finishedDownloadFilename, trackName, artist, album, coverFlag, description, 0)
 
-    
     cleanUp(trackId, repairFilename(trackTitle))
 
 def repairFilename(trackName):
@@ -483,9 +561,18 @@ def getTrackId(soundcloudUrl):
             resolveUrl = "https://api.soundcloud.com/resolve.json?url="
             url = str(resolveUrl) + str(soundcloudUrl) + str("&client_id=") + str(clientId)
             s = requests.get(url)
+            log_debug(s.status_code)
+            if(s.status_code == 404):
+                log_debug("Resolving URL returned 404 Not Found, skipping this track!")
+                return 0
+            log_debug(s.content)
             s = s.content
             trackId = json.loads(s)
+            if trackId["duration"] == 0:
+                print("Duration = 0")
+                return 0
             trackId = trackId["id"]
+            log_debug("Track ID: {}".format(trackId))
             return trackId
         except:
             time.sleep(2)
@@ -499,8 +586,8 @@ def downloadPremium(trackId):
     hacky solution will continue to work. Probably until I cancel
     my SoundCloud Go Plus subscription (or rather trial)
     '''
-    log_debug("downloadPremium()")
-    while True:   
+    log_debug(">> downloadPremium()")
+    while True:
         try:
             r = requests.get("https://api-v2.soundcloud.com/tracks?ids={}&client_id={}&%5Bobject%20Object%5D=&app_version={}&app_locale=de".format(str(trackId), premiumClientId, appVersion),
                 headers={
@@ -516,24 +603,20 @@ def downloadPremium(trackId):
         except Exception as e:
             print(e)
         log_debug("Status Code: {}".format(r.status_code))
+        log_debug("Response: {}".format(r.text))
         if r.status_code == 200:
             break
         else:
             time.sleep(2)
-
-    with open(str(trackId) + ".txt", "w") as file:
-        file.write(r.text)
-
-    file = codecs.open(str(trackId) + ".txt",'r', encoding='UTF-8')
-    data = json.loads(file.readlines()[0])
-    url = data[0]['media']['transcodings'][0]['url']
+    data = json.loads(r.text)
+    transcoding_index = 0
+    url = data[0]['media']['transcodings'][transcoding_index]['url']
 
     '''
     In the words of Dillon Francis' alter ego DJ Hanzel: "van deeper"
     That link to the hls stream leads to yet another link, which
     contains yet another link, which contains...
     '''
-
     while True:
         try:   
             r = requests.get(url,
@@ -547,18 +630,26 @@ def downloadPremium(trackId):
                 })
         except Exception as e:
             print(e)
+        log_debug("URL: {}".format(url))
         log_debug("Status Code: {}".format(r.status_code))
+        log_debug("Response: {}".format(r.text))
         if r.status_code == 200:
             break
+        if r.status_code == 500:
+            log_debug("Got 500 Server-side error, trying next m3u8 playlist...")
+            transcoding_index += 1
+            url = data[0]['media'][transcoding_index]['url']
         else:
             time.sleep(2)
 
-    with open(str(trackId) + ".txt", "w") as file:
-        file.write(r.text)
+    data = json.loads(r.text)
+    url = data['url']
+    log_debug(f"URL: {url}")
 
-    with open(str(trackId) + ".txt") as f:
-        data = json.loads(f.read())
-        url = data['url']
+    if transcoding_index == 1 or transcoding_index == 3:
+        log_debug("Attempting to download progressive version...")
+        urllib.request.urlretrieve(url, "{}.m4a".format(trackId))
+        return
 
     '''
     Yet another really hacky solution, gets the .m3u8 file using curl,
@@ -585,47 +676,53 @@ def downloadPremium(trackId):
         else:
             time.sleep(2)
 
-    with open(str(trackId) + ".m3u8", "w") as file:
-        file.write(r.text)
+    downloadM3U8(trackId, r.text)
 
-    downloadM3U8(trackId)
+def downloadSegment(segment_urls, i, trackId, correctDirectory):
+    '''
+    This function randomly changes directories without telling it to,
+    please don't ask me why. This fixes that.
+    '''
+    if (os.getcwd() != correctDirectory):
+        os.chdir(correctDirectory)
 
-def downloadSegment(segment_urls, i, trackId):
     if platform.system() == 'Linux':
-        print("\033[K", "Segment: [{} / {}]".format(i + 1, len(segment_urls)), "\r", end='')
-    urllib.request.urlretrieve(segment_urls[i], f"{trackId}/{i}.m4a")
+        print("\033[K\r", "Segment: [{} / {}]".format(i + 1, len(segment_urls)), "\r", end='')
 
-def downloadM3U8(trackId):
+    while True:
+        try:
+            urllib.request.urlretrieve(segment_urls[i], "{}-{}.m4a".format(trackId, i))
+            break
+        except Exception as e:
+            print(e)
+            time.sleep(2)
+
+def downloadM3U8(trackId, m3u8_file):
     segment_urls = []
     regex = re.compile('^.*https.*$')
-    with open(f"{trackId}.m3u8") as m3u8file:
-        lines = m3u8file.readlines()
-        m3u8file.close()
-    for line in lines:
+
+    for line in m3u8_file.splitlines():
         if regex.search(line):
             line = line.replace('#EXT-X-MAP:URI=','')
             line = line.replace('"', '')
             line = line.replace('\n', '')
             segment_urls.append(line)
 
-    if not os.path.exists(f"{trackId}"):
-        os.mkdir(f"{trackId}")
-    Parallel(n_jobs=int(segmentsParallel))(delayed(downloadSegment)(segment_urls, i, trackId) for i in range(len(segment_urls)))
+    Parallel(n_jobs=int(segmentsParallel))(delayed(downloadSegment)(segment_urls, i, trackId, os.getcwd()) for i in range(len(segment_urls)))
+
+    print("\033[K\r", "                                   ", "\r", end='')
 
     segment_filenames = []
     for i in range(len(segment_urls)):
-        segment_filenames.append(f"{i}.m4a")
-
-    os.chdir(f"{trackId}")
+        segment_filenames.append("{}-{}.m4a".format(trackId, i))
 
     with open(str(trackId) + '.m4a', 'ab') as outfile:
         for file in segment_filenames:
             with open(file, "rb") as file2:
                 outfile.write(file2.read())
-    
-    shutil.move(f"{trackId}.m4a", f"../{trackId}.m4a")
-    os.chdir("..")
-    shutil.rmtree("{}".format(trackId))
+
+    for file in segment_filenames:
+        os.remove(file)
 
 def downloadPremiumPrivate(trackId, soundcloudUrl):
     log_debug("downloadPremiumPrivate()")
@@ -871,23 +968,26 @@ def addTags(filename, trackName, artist, album, coverFlag, description, m4aFlag)
     log_debug(f"addTags(filename = {filename}, trackName = {trackName}, artist = {artist}, album = {album}, coverFlag = {coverFlag}, m4aFlag = {m4aFlag})")
     if m4aFlag == 1:
         log_debug("Tagging .m4a...")
-        tags = MP4(filename).tags
-        if description != None:
-            tags["desc"] = description
-        tags["\xa9nam"] = trackName
-        if album != 0:
-            tags["\xa9alb"] = album
-        else:
-            tags["\xa9alb"] = "SoundCloud"
-        tags["\xa9ART"] = artist
+        try:
+            tags = MP4(filename).tags
+            if description != None:
+                tags["desc"] = description
+            tags["\xa9nam"] = trackName
+            if album != 0:
+                tags["\xa9alb"] = album
+            else:
+                tags["\xa9alb"] = "SoundCloud"
+            tags["\xa9ART"] = artist
 
-        with open("cover.jpg", "rb") as f:
-            tags["covr"] = [
-                MP4Cover(f.read(), imageformat=MP4Cover.FORMAT_JPEG)
-            ]
-        tags.save(filename)
-
-
+            with open("cover.jpg", "rb") as f:
+                tags["covr"] = [
+                    MP4Cover(f.read(), imageformat=MP4Cover.FORMAT_JPEG)
+                ]
+            tags.save(filename)
+        except Exception as e:
+            os.rename(filename, filename[:-4] + ".mp3")
+            filename = filename[:-4] + ".mp3"
+            m4aFlag = 0
 
     if m4aFlag == 0:
         log_debug("Tagging .mp3...")
@@ -1125,12 +1225,6 @@ def parseStuff():
     else:
         descriptionDisableFlag = False
 
-    global premiumFlag
-    if args.premium is True:
-        premiumFlag = True
-    else:
-        premiumFlag = False
-
     global metadataFlag
     if args.metadataArg is True:
         metadataFlag = True
@@ -1147,18 +1241,6 @@ def parseStuff():
     if args.segmentsParallel:
         segmentsParallel = args.segmentsParallel
 
-    global ffmpegPath
-    if args.ffmpegPath:
-        ffmpegPath = os.path.abspath(args.ffmpegPath)
-        if os.path.exists(ffmpegPath):
-            if os.path.isdir(ffmpegPath):
-                ffmpegPath = os.path.join(ffmpegPath, "ffmpeg")
-        else:
-            print("ffmpeg-location is incorrect - path \"" + ffmpegPath + "\" does not exist")
-            exit()
-    else:
-        ffmpegPath = "ffmpeg"
-
     global resumeDownloadFlag
     if args.resumeDownloadFlag is True:
         resumeDownloadFlag = True
@@ -1172,7 +1254,6 @@ def parseStuff():
     log_debug(f"premiumFlag = {premiumFlag}")
     log_debug(f"metadataFlag =  {metadataFlag}")
     log_debug(f"playlistFlag = {playlistFlag}")
-    log_debug(f"ffmpegPath = {ffmpegPath}")
     log_debug(f"segmentsParallel = {segmentsParallel}")
 
 if __name__ == '__main__':
