@@ -268,9 +268,11 @@ def linkDetection(soundcloudUrl):
         return 2, soundcloudUrl
 
     #URL for tracks of a user
-    userReTracks1 = re.compile(r"^https:\/\/soundcloud.com\/[abcdefghijklmnopqrstuvwxyz\-_1234567890]{1,}$")
-    userReTracks2 = re.compile(r"^https:\/\/soundcloud.com\/[abcdefghijklmnopqrstuvwxyz\-_1234567890]{1,25}\/tracks$")
+    userReTracks1 = re.compile(r"^https:\/\/soundcloud.com\/[a-z\-_0-9]{1,}[\/]*$")
+    if (userReTracks1.match(soundcloudUrl)):
+        return 3, soundcloudUrl
 
+    userReTracks2 = re.compile(r"^https:\/\/soundcloud.com\/[a-z\-_0-9]{1,}\/tracks[\/]*$")
     if (userReTracks1.match(soundcloudUrl)) or (userReTracks2.match(soundcloudUrl)):
         return 3, soundcloudUrl
 
@@ -1074,6 +1076,84 @@ def getPlaylistDescriptions(playlistId):
             description[i] = ""
 
     return description
+
+def get_user_id(profile_url):
+    resolve_url = "https://api-mobi.soundcloud.com/resolve?permalink_url=" + profile_url + "&client_id=iZIs9mchVcX5lhVRyQGGAYlNPVldzAoX&format=json&app_version=1582537945"
+    r = requests.get(resolve_url)
+    r = r.content
+    x = json.loads(r)
+    return x["id"]
+
+def get_tracks_account(link):
+    resolve_url = "https://api-mobi.soundcloud.com/users/" + str(get_user_id(link)) + "/profile?client_id=iZIs9mchVcX5lhVRyQGGAYlNPVldzAoX&format=json&app_version=1582537945"
+    tracks = get_tracks_account_rec(resolve_url)
+    return tracks
+
+def get_tracks_account_rec(resolve_url):
+    r = requests.get(resolve_url)
+    r = r.content
+    x = json.loads(r)
+    songs = []
+    try:
+        for i in x["posts"]["collection"]:
+            try:
+                if i["type"] == "track":
+                    songs.append(i["track"]["permalink_url"])
+            except:
+                pass
+    except:
+        pass
+
+    try:
+        for i in x["collection"]:
+            try:
+                if i["type"] == "track":
+                    songs.append(i["track"]["permalink_url"])
+            except:
+                pass
+    except:
+        pass
+    try:
+        if x["posts"]["next_href"] is not None:
+            return songs + get_tracks_account_rec(re.sub(r'limit=', r'limit=100', x["posts"]["next_href"])  + "&client_id=iZIs9mchVcX5lhVRyQGGAYlNPVldzAoX&format=json&app_version=1582537945")
+    except:
+        if x["next_href"] is not None:
+            return songs + get_tracks_account_rec(re.sub(r'limit=', r'limit=100', x["next_href"])  + "&client_id=iZIs9mchVcX5lhVRyQGGAYlNPVldzAoX&format=json&app_version=1582537945")
+
+    return songs
+
+def get_account_name(link):
+    resolve_url = "https://api-mobi.soundcloud.com/resolve?permalink_url=" + link + "&client_id=iZIs9mchVcX5lhVRyQGGAYlNPVldzAoX&format=json&app_version=1582537945"
+    r = requests.get(resolve_url)
+    r = r.content
+    x = json.loads(r)
+    print(x)
+    try:
+        return x["user"]["permalink"]
+    except:
+        return x['permalink']
+
+def downloadUserTracks(soundcloudUrl):
+    print("This is a user!")
+    print("URL: {}".format(soundcloudUrl))
+    while True:
+        try:
+            account_tracks = get_tracks_account(soundcloudUrl)
+            break
+        except:
+            time.sleep(2)
+
+    folder_name = get_account_name(soundcloudUrl)
+    if not os.path.exists(folder_name):
+        os.mkdir(folder_name)
+        os.chdir(folder_name)
+    else:
+        os.chdir(folder_name)
+    for x in account_tracks:
+        try:
+            downloadSingleTrack(x, "", 1, 0)
+        except Exception as e: 
+            print(e)
 
 def parseStuff():
     parser = argparse.ArgumentParser()
