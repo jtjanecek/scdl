@@ -1005,10 +1005,9 @@ def getPlaylistId(soundcloudUrl):
     The name says it all, that's really all there is to it.
     '''
     log_debug(f">> getPlaylistId(soundcloudUrl = {soundcloudUrl})")
-    playlistIdRequest = requests.get("https://api-mobi.soundcloud.com/resolve?permalink_url={}&client_id={}&format=json&app_version={}".format(soundcloudUrl, clientId, appVersion)).content
-    log_debug(f"URL: {playlistIdRequest.url}")
-    log_debug(f"Status code: {playlistIdRequest.status_code}")
-    playlistIdRequest = json.loads(playlistIdRequest)
+    playlistIdRequest = requests.get("https://api-mobi.soundcloud.com/resolve?permalink_url={}&client_id={}&format=json&app_version={}".format(soundcloudUrl, clientId, appVersion))
+    log_debug("Status code: {}".format(playlistIdRequest.status_code))
+    playlistIdRequest = json.loads(playlistIdRequest.content)
     log_debug("Playlist ID: {}".format(playlistIdRequest["id"]))
     return playlistIdRequest["id"]
 
