@@ -995,6 +995,7 @@ def addTags(filename, trackName, artist, album, coverFlag, description, m4aFlag)
                 ]
             tags.save(filename)
         except Exception as e:
+            log_debug("Nevermind...")
             os.rename(filename, filename[:-4] + ".mp3")
             filename = filename[:-4] + ".mp3"
             m4aFlag = 0
