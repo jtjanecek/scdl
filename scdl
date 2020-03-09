@@ -1140,20 +1140,7 @@ def getPlaylistDescriptions(playlistId):
     return description
 
 def parseStuff():
-    '''
-    Checks for two arguments, --pl for a playlist link and
-    -p for the m4a download. If the playlist flag isn't present
-    it just uses a simple regex as a fallback. If the premium flag
-    isn't present scdl will simply download the 128kbps MP3 available
-    for everyone else that isn't a SCG+ subscriber.
-    '''
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-p','--premium',
-        help="Use to download 256kbps M4A files",
-        action="store_true",
-        dest="premium",
-        )
     parser.add_argument(
         '-pl','--playlist',
         help="Download a playlist instead of a single track",
@@ -1171,12 +1158,6 @@ def parseStuff():
         help="Disable reading and writing of description ID3 tag / JSON",
         action="store_true",
         dest="descriptionFlag"
-        )
-    parser.add_argument(
-        '-f','--ffmpeg-location',
-        help="Path to ffmpeg. Can be the containing directory or ffmpeg executable itself",
-        action="store",
-        dest="ffmpegPath"
         )
     parser.add_argument(
         '-r', '--resume',
