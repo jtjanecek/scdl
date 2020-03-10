@@ -1225,33 +1225,76 @@ def downloadUserLikes(soundcloudUrl):
         print("Downloading only tracks!")
         changeDirectory("{}_likes".format(get_account_name(soundcloudUrl)))
 
-    if resumeDownloadFlag is True:
-        if not os.path.exists(lastTrackIndexFilePath):
-            lastTrackIndexFile = open(lastTrackIndexFilePath, 'w+')
-            lastTrackIndex = 0
-            lastTrackIndexFile.write(str(lastTrackIndex))
+        if resumeDownloadFlag is True:
+            if not os.path.exists(lastTrackIndexFilePath):
+                lastTrackIndexFile = open(lastTrackIndexFilePath, 'w+')
+                lastTrackIndex = 0
+                lastTrackIndexFile.write(str(lastTrackIndex))
+            else:
+                lastTrackIndexFile = open(lastTrackIndexFilePath, 'r')
+                lastTrackIndex = int(lastTrackIndexFile.read())
         else:
-            lastTrackIndexFile = open(lastTrackIndexFilePath, 'r')
-            lastTrackIndex = int(lastTrackIndexFile.read())
-    else:
-        lastTrackIndex = -1
-        if not os.path.exists(lastTrackIndexFilePath):
-            lastTrackIndexFile = open(lastTrackIndexFilePath, 'w+')
-            lastTrackIndexFile.write(str(lastTrackIndex))
+            lastTrackIndex = -1
+            if not os.path.exists(lastTrackIndexFilePath):
+                lastTrackIndexFile = open(lastTrackIndexFilePath, 'w+')
+                lastTrackIndexFile.write(str(lastTrackIndex))
 
-    index = 0
-    for i in liked_tracks:
-        try:
-            if index > lastTrackIndex:
-                downloadSingleTrack(i, "", 1, 0)
-                lastTrackIndexFile = open(lastTrackIndexFilePath, 'w')
-                lastTrackIndexFile.write(str(index))
-                lastTrackIndexFile.close()
-        except Exception as e: 
-            print(e)
-        index += 1
-    log_debug("Download of playlist finished, deleting last_track_index.txt ...")
-    os.remove("last_track_index.txt")
+        index = 0
+        for i in liked_tracks:
+            try:
+                if index > lastTrackIndex:
+                    downloadSingleTrack(i, "", 1, 0)
+                    lastTrackIndexFile = open(lastTrackIndexFilePath, 'w')
+                    lastTrackIndexFile.write(str(index))
+                    lastTrackIndexFile.close()
+            except Exception as e: 
+                print(e)
+            index += 1
+        log_debug("Download of playlist finished, deleting last_track_index.txt ...")
+        os.remove("last_track_index.txt")
+
+    if menu_choice == "2":
+        changeDirectory("{}_likes".format(get_account_name(soundcloudUrl)))
+        for i in liked_playlists:
+            downloadPlaylist(i, 1)
+            os.chdir(os.path.dirname(os.getcwd()))
+
+    if menu_choice == "3":
+        print("Downloading only tracks!")
+        changeDirectory("{}_likes".format(get_account_name(soundcloudUrl)))
+
+        if resumeDownloadFlag is True:
+            if not os.path.exists(lastTrackIndexFilePath):
+                lastTrackIndexFile = open(lastTrackIndexFilePath, 'w+')
+                lastTrackIndex = 0
+                lastTrackIndexFile.write(str(lastTrackIndex))
+            else:
+                lastTrackIndexFile = open(lastTrackIndexFilePath, 'r')
+                lastTrackIndex = int(lastTrackIndexFile.read())
+        else:
+            lastTrackIndex = -1
+            if not os.path.exists(lastTrackIndexFilePath):
+                lastTrackIndexFile = open(lastTrackIndexFilePath, 'w+')
+                lastTrackIndexFile.write(str(lastTrackIndex))
+
+        index = 0
+        for i in liked_tracks:
+            try:
+                if index > lastTrackIndex:
+                    downloadSingleTrack(i, "", 1, 0)
+                    lastTrackIndexFile = open(lastTrackIndexFilePath, 'w')
+                    lastTrackIndexFile.write(str(index))
+                    lastTrackIndexFile.close()
+            except Exception as e: 
+                print(e)
+            index += 1
+        log_debug("Download of playlist finished, deleting last_track_index.txt ...")
+        os.remove("last_track_index.txt")
+
+        for i in liked_playlists:
+            downloadPlaylist(i, 1)
+            os.chdir(os.path.dirname(os.getcwd()))
+
 
 def getUserLikesTracksRec(resolve_url):
     r = requests.get(resolve_url)
