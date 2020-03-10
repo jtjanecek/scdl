@@ -1162,9 +1162,9 @@ def downloadUserTracks(soundcloudUrl):
             lastTrackIndexFile = open(lastTrackIndexFilePath, 'r')
             lastTrackIndex = int(lastTrackIndexFile.read())
     else:
+        lastTrackIndex = -1
         if not os.path.exists(lastTrackIndexFilePath):
             lastTrackIndexFile = open(lastTrackIndexFilePath, 'w+')
-            lastTrackIndex = 0
             lastTrackIndexFile.write(str(lastTrackIndex))
 
     index = 0
@@ -1211,9 +1211,9 @@ def downloadUserLikes(soundcloudUrl):
             lastTrackIndexFile = open(lastTrackIndexFilePath, 'r')
             lastTrackIndex = int(lastTrackIndexFile.read())
     else:
+        lastTrackIndex = -1
         if not os.path.exists(lastTrackIndexFilePath):
             lastTrackIndexFile = open(lastTrackIndexFilePath, 'w+')
-            lastTrackIndex = 0
             lastTrackIndexFile.write(str(lastTrackIndex))
 
     index = 0
