@@ -1274,12 +1274,6 @@ def getUserLikesPlaylistsRec(resolve_url):
 def parseStuff():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-pl','--playlist',
-        help="Download a playlist instead of a single track",
-        action="store_true",
-        dest="playlistFlag",
-        )
-    parser.add_argument(
         '-m','--metadata',
         help="Write track metadata to a separate file",
         action="store_true",
