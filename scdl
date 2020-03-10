@@ -242,8 +242,13 @@ def downloadEmbeddedFreeDownload(trackId):
                         filename = re.findall("filename=\"(.+)\"", r.headers['content-disposition'])[0]
                         filename = unquote(filename)
                     print("Filename: {}".format(filename))
-                    urllib.request.urlretrieve(x['redirectUri'], filename)
-                    break
+                    try:
+                        urllib.request.urlretrieve(x['redirectUri'], filename)
+                        break
+                    except:
+                        urllib.request.urlretrieve(x['redirectUri'], repairFilename(data[0]['title']) + "." + (filename.split('.'))[-1])
+                        break
+
                 except Exception as e:
                     print(e)
                     time.sleep(2)
@@ -328,7 +333,9 @@ def downloadSingleTrack(soundcloudUrl, trackTitle, hqFlag, optionalAlbum):
         if resumeDownloadFlag == True:
             if not os.path.exists(str(trackTitle) + '.m4a') and not os.path.exists(str(repairFilename(trackTitle)) + '.m4a'):
                 try:
-                    downloadPremium(trackId)
+                    ret = downloadPremium(trackId)
+                    if ret == -1:
+                        return None
                     '''
                     A failed m4a download results in an empty file
                     due to the lack of audio streams, so we can just
@@ -370,7 +377,9 @@ def downloadSingleTrack(soundcloudUrl, trackTitle, hqFlag, optionalAlbum):
                 print(str(repairFilename(trackTitle)) + " Already Exists")              
         else:
             try:
-                downloadPremium(trackId)
+                ret = downloadPremium(trackId)
+                if ret == -1:
+                    return None
                 '''
                 A failed m4a download results in an empty file
                 due to the lack of audio streams, so we can just
@@ -554,6 +563,9 @@ def getTrackId(soundcloudUrl):
             if(s.status_code == 404):
                 log_debug("Resolving URL returned 404 Not Found, skipping this track!")
                 return 0
+            if(s.status_code == 403):
+                log_debug("Track not available! (Country?)")
+                return 0
             log_debug(s.content)
             s = s.content
             trackId = json.loads(s)
@@ -599,6 +611,9 @@ def downloadPremium(trackId):
             time.sleep(2)
     data = json.loads(r.text)
     transcoding_index = 0
+    if(data[0]['media']['transcodings'] == []):
+        print("No audio streams available!")
+        return -1
     url = data[0]['media']['transcodings'][transcoding_index]['url']
 
     '''
@@ -638,7 +653,7 @@ def downloadPremium(trackId):
     if transcoding_index == 1 or transcoding_index == 3:
         log_debug("Attempting to download progressive version...")
         urllib.request.urlretrieve(url, "{}.m4a".format(trackId))
-        return
+        return 0
 
     '''
     Yet another really hacky solution, gets the .m3u8 file using curl,
@@ -666,6 +681,7 @@ def downloadPremium(trackId):
             time.sleep(2)
 
     downloadM3U8(trackId, r.text)
+    return 0
 
 def downloadSegment(segment_urls, i, trackId, correctDirectory):
     '''
@@ -906,10 +922,13 @@ def getDescription(soundcloudUrl):
     a = requests.get("https://api.soundcloud.com/resolve.json?url=" + soundcloudUrl + "&client_id=" + clientId)
     log_debug(f"URL: {a.url}")
     log_debug(f"Status code: {a.status_code}")
-    a = a.content
-    tags = json.loads(a)
-    description = tags["description"]
-    log_debug("Got description!")
+    a = a.text
+    try:
+        tags = json.loads(a)
+        description = tags["description"]
+        log_debug("Got description!")
+    except:
+        description = ""
     return description
 
 def addTags(filename, trackName, artist, album, coverFlag, description, m4aFlag):
