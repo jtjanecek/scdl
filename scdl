@@ -256,9 +256,6 @@ def linkDetection(soundcloudUrl):
     return 1 = single track
     return 2 = playlist
     '''
-    
-    # Always make URL lowercase
-    soundcloudUrl = soundcloudUrl.lower()
 
     # Fix a missing https://
     soundcloudUrl = soundcloudUrl.replace("http://", "https://")
@@ -986,11 +983,16 @@ def addTags(filename, trackName, artist, album, coverFlag, description, m4aFlag)
 
 def downloadPlaylist(soundcloudUrl, hqFlag):
     log_debug(f">> downloadPlaylist(soundcloudUrl = {soundcloudUrl}, hqFlag = {hqFlag})")
+    try:
+        secretToken = soundcloudUrl.split("/")[6]
+    except:
+        secretToken = "0"
+    log_debug("Secret token: {}".format(secretToken))
     playlistId = getPlaylistId(soundcloudUrl)
     print("Playlist ID: {}".format(playlistId))
-    permalinkUrl, trackId, trackName, album, trackCount = getPlaylistTracks(playlistId)
+    permalinkUrl, album = getPlaylistTracks(playlistId, secretToken)
     if descriptionDisableFlag == 0:
-        description = getPlaylistDescriptions(playlistId)
+        description = getPlaylistDescriptions(playlistId, secretToken)
     else:
         description = ""
 
@@ -1004,8 +1006,8 @@ def downloadPlaylist(soundcloudUrl, hqFlag):
         lastTrackIndexFile = open(lastTrackIndexFilePath, 'r')
         lastTrackIndex = int(lastTrackIndexFile.read())
     
-    for index in range(lastTrackIndex, trackCount):
-        downloadSingleTrack(permalinkUrl[index], trackName[index], hqFlag, album)
+    for index in range(lastTrackIndex, len(permalinkUrl)):
+        downloadSingleTrack(permalinkUrl[index], "", 1, album)
         lastTrackIndexFile = open(lastTrackIndexFilePath, 'w')
         lastTrackIndexFile.write(str(index))
         lastTrackIndexFile.close()
@@ -1020,47 +1022,65 @@ def getPlaylistId(soundcloudUrl):
     playlistIdRequest = requests.get("https://api-mobi.soundcloud.com/resolve?permalink_url={}&client_id={}&format=json&app_version={}".format(soundcloudUrl, clientId, appVersion))
     log_debug("Status code: {}".format(playlistIdRequest.status_code))
     playlistIdRequest = json.loads(playlistIdRequest.content)
-    log_debug("Playlist ID: {}".format(playlistIdRequest["id"]))
+    log_debug("Content: {}".format(playlistIdRequest))
     return playlistIdRequest["id"]
 
-def getPlaylistTracks(playlistId):
+def getPlaylistTracks(playlistId, secretToken):
     '''
     Gets the links to all the tracks in a playlist together with their
     names as well as their IDs, all of which are necessary to download
     the track seamlessly.
     '''
-    log_debug(f">> getPlaylistTracks(playlistId = {playlistId})")
-    playlistUrls = requests.get("http://api.soundcloud.com/playlists/{}?client_id={}".format(playlistId, clientId))
+    log_debug(f">> getPlaylistTracks(playlistId = {playlistId}, secretToken = {secretToken})")
+    if secretToken != "0":
+        playlistUrls = requests.get("http://api-v2.soundcloud.com/playlists/{}?client_id={}&secret_token={}".format(playlistId, clientId, secretToken))
+    else:
+        playlistUrls = requests.get("http://api-v2.soundcloud.com/playlists/{}?client_id={}".format(playlistId, clientId))
+
     log_debug(f"Playlist URL: {playlistUrls.url}")
     log_debug(f"Status code: {playlistUrls.status_code}")
     permalinkUrls = json.loads(playlistUrls.content)
     album = permalinkUrls["title"]
     print(f"Album: {album}")
-    permalinkUrl = []
     trackId = []
-    trackTitle = []
     trackCount = int(permalinkUrls["track_count"])
     log_debug(f"trackCount = {trackCount}")
+    missingTracks = 0
 
     for i in range(trackCount):
         try:
-            permalinkUrl.append(i)
-            trackId.append(i)
-            trackTitle.append(i)
-            permalinkUrl[i] = permalinkUrls["tracks"][i]["permalink_url"]
-            trackId[i] = permalinkUrls["tracks"][i]["id"]
-            trackTitle[i] = permalinkUrls["tracks"][i]["title"]
-        except IndexError:
-            missingTracks = trackCount - i
-            print(f"Sorry, {str(missingTracks)} of the tracks in this playlist are not available",
-                "in your country and can therefore not be downloaded.",
-                "Please use a VPN.")
-            trackCount = i
-            break
+            trackId.append(permalinkUrls["tracks"][i]["id"])
+        except:
+            missingTracks += 1
+    if(missingTracks > 0):
+        print("Sorry, can only download {} out of {} tracks of this playlist.".format(trackCount - missingTracks, trackCount))
 
-    return permalinkUrl, trackId, trackTitle, album, trackCount    
+    log_debug("{}".format(trackId))
+    log_debug("Number of tracks with track IDs: {}".format(len(trackId)))
+    log_debug("Crafting fancy URL...")
 
-def getPlaylistDescriptions(playlistId):
+    fancyPlaylistUrl = "https://api-mobi.soundcloud.com/tracks?client_id={}&format=json&app_version={}&ids=".format(clientId, appVersion)
+    for i in trackId:
+        fancyPlaylistUrl = "{}{}{}".format(fancyPlaylistUrl, i, "%2C")
+    fancyPlaylistUrl = fancyPlaylistUrl[:-3]
+    fancyPlaylistUrl = "{}&playlistId={}&playlistSecretToken=".format(fancyPlaylistUrl, playlistId)
+    if secretToken != "0":
+        fancyPlaylistUrl = "{}{}".format(fancyPlaylistUrl, secretToken)
+    else:
+        fancyPlaylistUrl = "{}{}".format(fancyPlaylistUrl, "null")
+    log_debug("New crafted URL = {}".format(fancyPlaylistUrl))
+
+    pl = requests.get(fancyPlaylistUrl)
+    log_debug(pl.status_code)
+    playlist_json = json.loads(pl.content)
+    permalink_url_list = []
+
+    for i in range(len(playlist_json)):
+        permalink_url_list.append(playlist_json[i]['permalink_url'])
+        log_debug(playlist_json[i]['permalink_url'])
+    return permalink_url_list, album
+
+def getPlaylistDescriptions(playlistId, secretToken):
     '''
     Get individual descriptions for all the track in a playlist.
     I have yet to figure out why the getTags function refuses
@@ -1070,7 +1090,10 @@ def getPlaylistDescriptions(playlistId):
     other ones won't hurt.
     '''
     log_debug(f">> getPlaylistDescriptions(playlistId = {playlistId})")
-    playlistUrls = requests.get("http://api.soundcloud.com/playlists/{}?client_id={}".format(playlistId, clientId))
+    if secretToken != "0":
+        playlistUrls = requests.get("http://api.soundcloud.com/playlists/{}?client_id={}&secret_token={}".format(playlistId, clientId, secretToken))
+    else:
+        playlistUrls = requests.get("http://api.soundcloud.com/playlists/{}?client_id={}".format(playlistId, clientId))
     log_debug(f"Playlist URL: {playlistUrls.url}")
     log_debug(f"Status code: {playlistUrls.status_code}")
     permalinkUrls = json.loads(playlistUrls.content)
