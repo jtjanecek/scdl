@@ -91,6 +91,10 @@ def main():
 
     if linkType == 3:
         downloadUserTracks(soundcloudUrl)
+
+    if linkType == 4:
+        downloadUserLikes(soundcloudUrl)
+
     print("Done!")
 
 def updateLinux():
@@ -1092,9 +1096,7 @@ def get_user_id(profile_url):
     return x["id"]
 
 def get_tracks_account(link):
-    resolve_url = "https://api-mobi.soundcloud.com/users/" + str(get_user_id(link)) + "/profile?client_id=iZIs9mchVcX5lhVRyQGGAYlNPVldzAoX&format=json&app_version=1582537945"
-    tracks = get_tracks_account_rec(resolve_url)
-    return tracks
+    return get_tracks_account_rec("https://api-mobi.soundcloud.com/users/{}/profile?client_id={}&format=json&app_version={}".format(get_user_id(link), clientId, appVersion))
 
 def get_tracks_account_rec(resolve_url):
     r = requests.get(resolve_url)
@@ -1125,7 +1127,7 @@ def get_tracks_account_rec(resolve_url):
             return songs + get_tracks_account_rec(re.sub(r'limit=', r'limit=100', x["posts"]["next_href"])  + "&client_id=iZIs9mchVcX5lhVRyQGGAYlNPVldzAoX&format=json&app_version=1582537945")
     except:
         if x["next_href"] is not None:
-            return songs + get_tracks_account_rec(re.sub(r'limit=', r'limit=100', x["next_href"])  + "&client_id=iZIs9mchVcX5lhVRyQGGAYlNPVldzAoX&format=json&app_version=1582537945")
+            return songs + get_tracks_account_rec(re.sub(r'limit=', r'limit=100', x["next_href"])  + "&client_id={}&format=json&app_version={}".format(clientId, appVersion))
 
     return songs
 
@@ -1134,7 +1136,6 @@ def get_account_name(link):
     r = requests.get(resolve_url)
     r = r.content
     x = json.loads(r)
-    print(x)
     try:
         return x["user"]["permalink"]
     except:
@@ -1179,6 +1180,96 @@ def downloadUserTracks(soundcloudUrl):
         index += 1
     log_debug("Download of playlist finished, deleting last_track_index.txt ...")
     os.remove("last_track_index.txt")
+
+def downloadUserLikes(soundcloudUrl):
+    if '/likes' in soundcloudUrl:
+        soundcloudUrl = soundcloudUrl.split('/likes')[0]
+    log_debug("Getting user ID for {}".format(soundcloudUrl))
+    user_id = get_user_id(soundcloudUrl)
+    log_debug("User ID: {}".format(user_id))
+
+    liked_tracks = getUserLikesTracksRec("https://api-mobi.soundcloud.com/users/{}/likes?offset=0&limit=300&client_id={}&format=json&app_version={}".format(user_id, clientId, appVersion))
+    print("Liked tracks: {}".format(len(liked_tracks)))
+    liked_playlists = getUserLikesPlaylistsRec("https://api-mobi.soundcloud.com/users/{}/likes?offset=0&limit=300&client_id={}&format=json&app_version={}".format(user_id, clientId, appVersion))
+    print("Liked playlists: {}".format(len(liked_playlists)))
+    print("Enter a number:")
+    print("    [1] Only download liked tracks")
+    print("    [2] Only download liked playlists")
+    print("    [3] Download both liked tracks and liked playlists")
+    menu_choice = input()
+
+    if menu_choice == "1":
+        print("Downloading only tracks!")
+        changeDirectory("{}_likes".format(get_account_name(soundcloudUrl)))
+
+    if resumeDownloadFlag is True:
+        if not os.path.exists(lastTrackIndexFilePath):
+            lastTrackIndexFile = open(lastTrackIndexFilePath, 'w+')
+            lastTrackIndex = 0
+            lastTrackIndexFile.write(str(lastTrackIndex))
+        else:
+            lastTrackIndexFile = open(lastTrackIndexFilePath, 'r')
+            lastTrackIndex = int(lastTrackIndexFile.read())
+    else:
+        if not os.path.exists(lastTrackIndexFilePath):
+            lastTrackIndexFile = open(lastTrackIndexFilePath, 'w+')
+            lastTrackIndex = 0
+            lastTrackIndexFile.write(str(lastTrackIndex))
+
+    index = 0
+    for i in liked_tracks:
+        try:
+            if index > lastTrackIndex:
+                downloadSingleTrack(i, "", 1, 0)
+                lastTrackIndexFile = open(lastTrackIndexFilePath, 'w')
+                lastTrackIndexFile.write(str(index))
+                lastTrackIndexFile.close()
+        except Exception as e: 
+            print(e)
+        index += 1
+    log_debug("Download of playlist finished, deleting last_track_index.txt ...")
+    os.remove("last_track_index.txt")
+
+def getUserLikesTracksRec(resolve_url):
+    r = requests.get(resolve_url)
+    r = r.content
+    r = json.loads(r)
+    songs = []
+    playlists = []
+
+    try:
+        for index in r['collection']:
+            try:
+                songs.append(index['track']['permalink_url'])
+            except:
+                pass
+    except:
+        pass
+
+    if r['next_href'] is not None:
+        return songs + getUserLikesTracksRec("{}&client_id={}&format=json&app_version={}".format(r['next_href'], clientId, appVersion))
+    else:
+        return songs
+
+def getUserLikesPlaylistsRec(resolve_url):
+    r = requests.get(resolve_url)
+    r = r.content
+    r = json.loads(r)
+    playlists = []
+
+    try:
+        for index in r['collection']:
+            try:
+                playlists.append(index['playlist']['permalink_url'])
+            except:
+                pass
+    except:
+        pass
+
+    if r['next_href'] is not None:
+        return playlists + getUserLikesPlaylistsRec("{}&client_id={}&format=json&app_version={}".format(r['next_href'], clientId, appVersion))
+    else:
+        return playlists
 
 def parseStuff():
     parser = argparse.ArgumentParser()
