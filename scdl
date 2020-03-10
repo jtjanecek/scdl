@@ -252,22 +252,30 @@ def linkDetection(soundcloudUrl):
     return 1 = single track
     return 2 = playlist
     '''
-    #Fix a missing https://
+    
+    # Always make URL lowercase
+    soundcloudUrl = soundcloudUrl.lower()
+
+    # Fix a missing https://
     soundcloudUrl = soundcloudUrl.replace("http://", "https://")
 
     if not "https://" in soundcloudUrl:
         soundcloudUrl = "https://" + soundcloudUrl
 
-    #Fix URL if it is a single track out of a playlist
+    # Fix URL if it is a single track out of a playlist
     if '?in=' in soundcloudUrl:
         soundcloudUrl = soundcloudUrl.split('?in=')
         soundcloudUrl = soundcloudUrl[0]
 
-    #URL is a playlist
+    # Remove slash at the end to avoid errors while resolving URL
+    if soundcloudUrl[-1] == '/':
+        soundcloudUrl = soundcloudUrl[:-1]
+
+    # URL is a playlist
     if '/sets' in soundcloudUrl:
         return 2, soundcloudUrl
 
-    #URL for tracks of a user
+    # URL for tracks of a user
     userReTracks1 = re.compile(r"^https:\/\/soundcloud.com\/[a-z\-_0-9]{1,}[\/]*$")
     if (userReTracks1.match(soundcloudUrl)):
         return 3, soundcloudUrl
@@ -276,12 +284,12 @@ def linkDetection(soundcloudUrl):
     if (userReTracks1.match(soundcloudUrl)) or (userReTracks2.match(soundcloudUrl)):
         return 3, soundcloudUrl
 
-    #URL for likes of a user
+    # URL for likes of a user
     userReLikes = re.compile(r"^https:\/\/soundcloud.com\/[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\-_1234567890]{1,}\/likes$")
     if (userReLikes.match(soundcloudUrl)):
         return 4, soundcloudUrl
 
-    #This is a single track
+    # This is a single track
     else:
         return 1, soundcloudUrl
 
