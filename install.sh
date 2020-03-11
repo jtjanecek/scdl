@@ -24,6 +24,11 @@ if ! python3 -c "import mutagen" &> /dev/null; then
     python3 -m pip install mutagen
 fi
 
+if ! python3 -c "import joblib" &> /dev/null; then
+	echo "The joblib module is missing. Installing it now..."
+    python3 -m pip install joblib
+fi
+
 if [ -f /bin/scdl ]; then
 	rm -rf /bin/scdl
 fi
