@@ -967,7 +967,14 @@ def addTags(filename, trackName, artist, album, coverFlag, description, m4aFlag)
 
     if m4aFlag == 0:
         log_debug("Tagging .mp3...")
-        audio = EasyMP3(filename)
+        try:
+            audio = EasyMP3(filename)
+        except:
+            print("Something went wrong while tagging the file!")
+            print("Neither M4A or MP3 worked, so I can only assume that the file is corrupt in some way")
+            print("Please check the file using MediaInfo, VLC, mpv, spek and/or Mp3tag for erros.")
+            print("There's nothing I can do about this :(")
+            return
         audio['title'] = trackName
         audio['artist'] = artist
 
@@ -1313,7 +1320,6 @@ def downloadUserLikes(soundcloudUrl):
         for i in liked_playlists:
             downloadPlaylist(i, 1)
             os.chdir(os.path.dirname(os.getcwd()))
-
 
 def getUserLikesTracksRec(resolve_url):
     r = requests.get(resolve_url)
