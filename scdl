@@ -13,6 +13,7 @@ import urllib
 import codecs
 import mutagen
 import zipfile
+import binascii
 import argparse
 import requests
 import platform
@@ -689,6 +690,26 @@ def downloadPremium(trackId):
     downloadM3U8(trackId, r.text)
     return 0
 
+def fixFileheader(filename):
+    log_debug(">> fixFileheader (filename = {})".format(filename))
+    with open(filename, "rb+") as f:
+        f.seek(0)
+        first_few_bytes = f.read(24)
+        log_debug("File header: {}".format(first_few_bytes))
+        if first_few_bytes == b'\x00\x00\x00\x18ftypiso5\x00\x00\x02\x00iso6mp41':
+            log_debug("M4A header found!")
+            log_debug("Replacing it!")
+            f.seek(0)
+            hexstr = "00000018667479704D3441200000020069736F6D69736F32"
+            f.write(binascii.unhexlify(hexstr))
+            f.seek(0)
+            first_few_bytes = f.read(24)
+            log_debug("New file header:")
+            log_debug("{}".format(first_few_bytes))
+            f.seek(0)
+        else:
+            log_debug("Nothing to fix here...")
+
 def downloadSegment(segment_urls, i, trackId, correctDirectory):
     '''
     This function randomly changes directories without telling it to,
@@ -950,6 +971,7 @@ def addTags(filename, trackName, artist, album, coverFlag, description, m4aFlag)
     '''
     log_debug(f"addTags(filename = {filename}, trackName = {trackName}, artist = {artist}, album = {album}, coverFlag = {coverFlag}, m4aFlag = {m4aFlag})")
     if m4aFlag == 1:
+        fixFileheader(filename)
         log_debug("Tagging .m4a...")
         try:
             tags = MP4(filename).tags
