@@ -949,6 +949,16 @@ def addTags(filename, trackName, artist, album, coverFlag, description, m4aFlag)
     "SoundCloud"
     '''
     log_debug(f"addTags(filename = {filename}, trackName = {trackName}, artist = {artist}, album = {album}, coverFlag = {coverFlag}, m4aFlag = {m4aFlag})")
+        f.seek(0)
+        first_few_bytes = f.read(24)
+    if first_few_bytes == b'\x00\x00\x00\x18ftypiso5\x00\x00\x02\x00iso6mp41':
+        if debugFlag == True:
+            os.system("ffmpeg -y -i \"{}\" -c copy \"new_{}\"".format(filename, filename))
+        else:
+            os.system("ffmpeg -y -loglevel panic -i \"{}\" -c copy \"new_{}\"".format(filename, filename))
+        os.remove("{}".format(filename))
+        os.rename("new_{}".format(filename), "{}".format(filename))
+
     if m4aFlag == 1:
         log_debug("Tagging .m4a...")
         try:
@@ -1414,6 +1424,12 @@ def parseStuff():
         action="store",
         dest="segmentsParallel"
         )
+    parser.add_argument(
+        '-f','--ffmpeg-location',
+        help="Path to ffmpeg. Can be the containing directory or ffmpeg executable itself",
+        action="store",
+        dest="ffmpegPath"
+    )
 
     args = parser.parse_args()
 
@@ -1457,6 +1473,19 @@ def parseStuff():
     else:
         resumeDownloadFlag = False
 
+
+    global ffmpegPath
+    if args.ffmpegPath:
+        ffmpegPath = os.path.abspath(args.ffmpegPath)
+        if os.path.exists(ffmpegPath):
+            if os.path.isdir(ffmpegPath):
+                ffmpegPath = os.path.join(ffmpegPath, "ffmpeg")
+        else:
+            print("ffmpeg-location is incorrect - path \"" + ffmpegPath + "\" does not exist")
+            exit()
+    else:
+        ffmpegPath = "ffmpeg"
+
     log_debug(f"debugFlag = {debugFlag}")
     log_debug(f"updateLinuxFlag = {updateLinuxFlag}")
     log_debug(f"updateWindowsFlag = {updateWindowsFlag}")
@@ -1465,6 +1494,7 @@ def parseStuff():
     log_debug(f"metadataFlag =  {metadataFlag}")
     log_debug(f"segmentsParallel = {segmentsParallel}")
     log_debug(f"resumeDownloadFlag = {resumeDownloadFlag}")
+    log_debug(f"ffmpegPath = {ffmpegPath}")
 
 if __name__ == '__main__':
     main()

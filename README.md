@@ -4,7 +4,7 @@ Can also download 256kbps m4a files, not just 128kbps mp3 files! You do **NOT** 
 ## Usage
 ```
 usage: scdl [-h] [-m] [-dd] [-r] [--update-linux] [--update-windows] [--debug]
-            [-s SEGMENTSPARALLEL]
+            [-s SEGMENTSPARALLEL] [-f FFMPEGPATH]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -20,6 +20,9 @@ optional arguments:
   -s SEGMENTSPARALLEL, --segments SEGMENTSPARALLEL
                         Set number of segments that will be downloaded in
                         parallel (default = 16)
+  -f FFMPEGPATH, --ffmpeg-location FFMPEGPATH
+                        Path to ffmpeg. Can be the containing directory or
+                        ffmpeg executable itself
 ```
 By default the higher quality 256kbps M4A file will be downloaded (whenever it's available), mp3 is only used as a fallback. If there is a free download available (enabled by the artist and accessible under the "More..." button), then both .m4a and .mp3 will be skipped.
 
@@ -55,6 +58,7 @@ This script has been tested on Ubuntu 19.10 and Windows 10 (1903). Mac should wo
 
 * Python 3.6 (or higher)
 * python3-pip
+* FFmpeg
 
 ## Installation
 Linux:
@@ -64,6 +68,7 @@ scdl
 ```
 Windows:
 ```
+# Add FFmpeg to PATH
 python -m pip install --user mutagen
 python -m pip install --user requests
 python -m pip install --user joblib
