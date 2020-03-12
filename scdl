@@ -724,6 +724,8 @@ def downloadM3U8(trackId, m3u8_file):
             line = line.replace('\n', '')
             segment_urls.append(line)
 
+    log_debug("Segments: {}".format(segment_urls))
+
     Parallel(n_jobs=int(segmentsParallel))(delayed(downloadSegment)(segment_urls, i, trackId, os.getcwd()) for i in range(len(segment_urls)))
 
     print("\033[K\r", "                                   ", "\r", end='')
