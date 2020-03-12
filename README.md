@@ -4,7 +4,7 @@ Can also download 256kbps m4a files, not just 128kbps mp3 files! You do **NOT** 
 ## Usage
 ```
 usage: scdl [-h] [-m] [-dd] [-r] [--update-linux] [--update-windows] [--debug]
-            [-s SEGMENTSPARALLEL] [-f FFMPEGPATH]
+            [-s SEGMENTSPARALLEL] [-f FFMPEGPATH] [--progressive]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -23,6 +23,8 @@ optional arguments:
   -f FFMPEGPATH, --ffmpeg-location FFMPEGPATH
                         Path to ffmpeg. Can be the containing directory or
                         ffmpeg executable itself
+  --progressive         Download progressive audio files in one go instead of
+                        segments
 ```
 By default the higher quality 256kbps M4A file will be downloaded (whenever it's available), mp3 is only used as a fallback. If there is a free download available (enabled by the artist and accessible under the "More..." button), then both .m4a and .mp3 will be skipped.
 

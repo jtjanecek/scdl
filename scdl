@@ -616,7 +616,9 @@ def downloadPremium(trackId):
         else:
             time.sleep(2)
     data = json.loads(r.text)
-    transcoding_index = 1
+    transcoding_index = 0
+    if progressiveFlag == True:
+        transcoding_index = 1
     if(data[0]['media']['transcodings'] == []):
         print("No audio streams available!")
         return -1
@@ -775,7 +777,9 @@ def downloadPremiumPrivate(trackId, soundcloudUrl):
     data = json.loads(r.text)
     log_debug("Loaded JSON data...")
     transcoding_index = 0
-    url = data['media']['transcodings'][0]['url']
+    if progressiveFlag == True:
+        transcoding_index = 1
+    url = data['media']['transcodings'][transcoding_index]['url']
 
     '''
     In the words of Dillon Francis' alter ego DJ Hanzel: "van deeper"
@@ -949,6 +953,7 @@ def addTags(filename, trackName, artist, album, coverFlag, description, m4aFlag)
     "SoundCloud"
     '''
     log_debug(f"addTags(filename = {filename}, trackName = {trackName}, artist = {artist}, album = {album}, coverFlag = {coverFlag}, m4aFlag = {m4aFlag})")
+    with open("{}".format(filename), "rb") as f:
         f.seek(0)
         first_few_bytes = f.read(24)
     if first_few_bytes == b'\x00\x00\x00\x18ftypiso5\x00\x00\x02\x00iso6mp41':
@@ -1430,6 +1435,14 @@ def parseStuff():
         action="store",
         dest="ffmpegPath"
     )
+    parser.add_argument(
+        '--progressive',
+        help="Download progressive audio files in one go instead of segments",
+        action="store_true",
+        dest="progressiveFlag"
+
+
+        )
 
     args = parser.parse_args()
 
@@ -1473,7 +1486,6 @@ def parseStuff():
     else:
         resumeDownloadFlag = False
 
-
     global ffmpegPath
     if args.ffmpegPath:
         ffmpegPath = os.path.abspath(args.ffmpegPath)
@@ -1486,6 +1498,12 @@ def parseStuff():
     else:
         ffmpegPath = "ffmpeg"
 
+    global progressiveFlag
+    if args.progressiveFlag is True:
+        progressiveFlag = True
+    else:
+        progressiveFlag = False
+
     log_debug(f"debugFlag = {debugFlag}")
     log_debug(f"updateLinuxFlag = {updateLinuxFlag}")
     log_debug(f"updateWindowsFlag = {updateWindowsFlag}")
@@ -1494,6 +1512,7 @@ def parseStuff():
     log_debug(f"metadataFlag =  {metadataFlag}")
     log_debug(f"segmentsParallel = {segmentsParallel}")
     log_debug(f"resumeDownloadFlag = {resumeDownloadFlag}")
+    log_debug(f"progressiveFlag = {progressiveFlag}")
     log_debug(f"ffmpegPath = {ffmpegPath}")
 
 if __name__ == '__main__':
