@@ -250,7 +250,7 @@ def downloadEmbeddedFreeDownload(trackId):
                                 filename = repairFilename(data[0]['title']) + ".unknown"
                     print("Filename: {}".format(filename))
                     try:
-                        urllib.request.urlretrieve(x['redirectUri'], filename)
+                        urllib.request.urlretrieve(x['redirectUri'], repairFilename(filename))
                         break
                     except:
                         log_debug("An error occured while downloading the file, trying again...")
