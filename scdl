@@ -616,7 +616,7 @@ def downloadPremium(trackId):
         else:
             time.sleep(2)
     data = json.loads(r.text)
-    transcoding_index = 0
+    transcoding_index = 1
     if(data[0]['media']['transcodings'] == []):
         print("No audio streams available!")
         return -1
