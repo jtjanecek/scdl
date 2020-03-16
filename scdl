@@ -297,7 +297,7 @@ def linkDetection(soundcloudUrl):
         return 3, soundcloudUrl
 
     # URL for likes of a user
-    userReLikes = re.compile(r"^https:\/\/soundcloud.com\/[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\-_1234567890]{1,}\/likes$")
+    userReLikes = re.compile(r"^https:\/\/soundcloud.com\/[a-z\-_0-9]{1,}\/likes$")
     if (userReLikes.match(soundcloudUrl)):
         return 4, soundcloudUrl
 
