@@ -560,11 +560,10 @@ def getTrackId(soundcloudUrl):
     '''
     Self-explanatory.
     '''
+    log_debug(">> getTrackId(soundcloudUrl = {})".format(soundcloudUrl))
     while True:
         try:
-            resolveUrl = "https://api.soundcloud.com/resolve.json?url="
-            url = str(resolveUrl) + str(soundcloudUrl) + str("&client_id=") + str(clientId)
-            s = requests.get(url)
+            s = requests.get("https://api-mobi.soundcloud.com/resolve?permalink_url={}&client_id={}&format=json&app_version={}".format(soundcloudUrl, clientId, appVersion))
             log_debug(s.status_code)
             if(s.status_code == 404):
                 log_debug("Resolving URL returned 404 Not Found, skipping this track!")
@@ -854,7 +853,7 @@ def getTags(soundcloudUrl):
     log_debug(f"getTags(soundcloudUrl = {soundcloudUrl})")
     while True:
         try:
-            a = requests.get("https://api.soundcloud.com/resolve.json?url=" + soundcloudUrl + "&client_id=" + clientId)
+            a = requests.get("https://api-mobi.soundcloud.com/resolve?permalink_url={}&client_id={}&format=json&app_version={}".format(soundcloudUrl, clientId, appVersion))
             log_debug(f"URL: {a.url}")
             log_debug(f"Status code: {a.status_code}")
             a = a.content
