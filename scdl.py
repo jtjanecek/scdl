@@ -47,7 +47,7 @@ premiumClientId = "GSTMg2qyKgq8Ou9wvJfkxb3jk1ONIzvy"
 premiumFlag = True
 metadataFlag = 0
 descriptionDisableFlag = 0
-segmentsParallel = 16
+segmentsParallel = 1
 
 def log_debug(message):
     if debugFlag == True:
@@ -57,7 +57,7 @@ log_debug(f"clientId = {clientId}")
 log_debug(f"premiumClientId = {premiumClientId}")
 log_debug(f"appVersion = {appVersion}")
 
-def main():
+def main(soundcloudUrl, title, artist):
     parseStuff()
 
     if updateLinuxFlag == True:
@@ -79,12 +79,14 @@ def main():
     if debugFlag == True:
         print("Debugging output enabled!")
 
-    soundcloudUrl = input("Please enter a URL: ")
-
     linkType, soundcloudUrl = linkDetection(soundcloudUrl)
+    print("Link type: {}".format(linkType))
+    print("URL: {}".format(soundcloudUrl))
+    print("Title: {}".format(title))
+    print("Artist: {}".format(artist))
 
     if linkType == 1:
-        downloadSingleTrack(soundcloudUrl, "", 1, 0)
+        downloadSingleTrack(soundcloudUrl, "", 1, 0, title, artist)
 
     if linkType == 2:
         downloadPlaylist(soundcloudUrl, 1)
@@ -305,7 +307,7 @@ def linkDetection(soundcloudUrl):
     else:
         return 1, soundcloudUrl
 
-def downloadSingleTrack(soundcloudUrl, trackTitle, hqFlag, optionalAlbum):
+def downloadSingleTrack(soundcloudUrl, trackTitle, hqFlag, optionalAlbum, titleInput, artistInput):
     '''
     If you're downloading a playlist a string containing the playlist
     name will be passed to the function as optionalAlbum, otherwise 
@@ -430,31 +432,31 @@ def downloadSingleTrack(soundcloudUrl, trackTitle, hqFlag, optionalAlbum):
         alreadyDownloaded = False
     if not alreadyDownloaded:           
         trackName, artist, coverFlag = getTags(soundcloudUrl)
-        if descriptionDisableFlag == 0:
-            description = getDescription(soundcloudUrl)
-        else:
-            description = ""
-        
+        #if descriptionDisableFlag == 0:
+        #    description = getDescription(soundcloudUrl)
+        #else:
+        #    description = ""
+        description = ""
         '''
         #File gets renamed differently depending on whether or not it's
         #an m4a or mp3, obviously
         '''
         
         if m4aFailedFlag == 1 or hqFlag == 0:
-            finishedDownloadFilename = renameFile(trackId, trackName, 0)
+            finishedDownloadFilename = renameFile(trackId, "{} - {}".format(artistInput, titleInput), 0)
         else:
-            finishedDownloadFilename = renameFile(trackId, trackName, 1)
+            finishedDownloadFilename = renameFile(trackId, "{} - {}".format(artistInput, titleInput), 1)
      
         if premiumFlag ==  1 and hqFlag == 1 and m4aFailedFlag == 0:
             '''
             m4a
             '''
-            addTags(finishedDownloadFilename, trackName, artist, album, coverFlag, description, 1)
+            addTags(finishedDownloadFilename, titleInput, artistInput, album, coverFlag, description, 1)
         else:
             '''
             mp3
             '''
-            addTags(finishedDownloadFilename, trackName, artist, album, coverFlag, description, 0)
+            addTags(finishedDownloadFilename, titleInput, artistInput, album, coverFlag, description, 0)
 
     cleanUp(trackId, repairFilename(trackTitle))
 
@@ -1514,5 +1516,3 @@ def parseStuff():
     log_debug(f"progressiveFlag = {progressiveFlag}")
     log_debug(f"ffmpegPath = {ffmpegPath}")
 
-if __name__ == '__main__':
-    main()
